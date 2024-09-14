@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Главная страница{% endblock %}
+
+{% block content %}
+<form method="GET" action="" style="display: flex; align-items: center;">
+    <input type="text" name="search" placeholder="Поиск по категориям" value="{{ request.GET.search }}" class="search-input">
+    <button type="submit" class="search-button">Найти</button>
+    <a href="{% url 'cart' %}" class="cart-button">Ваши кешбэки</a>
+</form>
+
+<div class="cards-container">
+    {% for order in data.orders %}
+        <div class="card">
+            <a href="{% url 'order_url' order.id %}">
+                <img src="{{ order.image_url }}" alt="{{ order.alt }}" style="width: 215px; height: 90px; object-fit: contain;">
+                <h3>{{ order.title }}</h3>
+                <p>{{ order.details_text }}</p>
+            </a>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+
+
+
