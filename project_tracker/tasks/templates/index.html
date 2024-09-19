@@ -6,14 +6,17 @@
 <form method="GET" action="" style="display: flex; align-items: center;">
     <input type="text" name="search" placeholder="Поиск по категориям" value="{{ request.GET.search }}" class="search-input">
     <button type="submit" class="search-button">Найти</button>
-    <a href="{% url 'cart' %}" class="cart-button">Ваши кешбэки</a>
+    <a href="{% url 'cart' %}" class="cart-button">
+        Ваши кешбэки
+        <span class="cart-item-count">({{ data.cart_item_count }})</span>  <!-- Используем правильное имя переменной -->
+    </a>
 </form>
 
 <div class="cards-container">
-    {% for order in data.orders %}
+    {% for order in data.cashbacks %}
         <div class="card">
-            <a href="{% url 'order_url' order.id %}">
-                <img src="{{ order.image_url }}" alt="{{ order.alt }}" style="width: 215px; height: 90px; object-fit: contain;">
+            <a href="{% url 'cashback_url' order.id %}">
+                <img src="{{ order.image_url }}" alt="{{ order.title }}" class="card-image">
                 <h3>{{ order.title }}</h3>
                 <p>{{ order.details_text }}</p>
             </a>
@@ -21,7 +24,5 @@
     {% endfor %}
 </div>
 {% endblock %}
-
-
 
 

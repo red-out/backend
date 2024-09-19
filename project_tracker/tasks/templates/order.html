@@ -4,24 +4,20 @@
 
 {% block content %}
     <div class="order-details">
-        <h1>Информация о категории кешбэка {{ data.id }}</h1>
-        <div class="order-card">
-            <!-- Убедитесь, что изображение отображается -->
+     
             <img src="{{ data.image_url }}" alt="{{ data.title }}" class="order-image">
             <div class="order-info">
                 <h2 class="order-title">{{ data.title }}</h2>
-                <p class="order-description">{{ data.description }}</p>
-                <p class="order-price">Условие: {{ data.price }}</p>
-                <p class="order-quantity">Количество доступных кешбэков: {{ data.quantity }}</p>
-            </div>
+                <p class="order-description">{{ data.full_description }}</p>
+                <p class="order-price">Описание: {{ data.price }}</p>
+
         </div>
     </div>
-
     <div class="cart-actions">
-        <a href="{% url 'add_to_cart' data.id %}" class="add-to-cart-button">Добавить в кешбэк</a>
-        <a href="{% url 'home' %}" class="back-button">Назад</a>
+   
     </div>
 {% endblock %}
+
 
 
 

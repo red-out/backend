@@ -1,112 +1,128 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 from datetime import date
 
-def hello(request):
-   
-    orders = [
+# Вынесенная коллекция заказов
+def get_cashbacks():
+    return [
         {
             'id': 1,
             'title': 'Образование',
             'image_url': 'http://127.0.0.1:9000/web/free-icon-books-4645290.png',
-            'alt': 'Образование',
-            'details_text': ' Вы получите от 13 до 500 рублей',
+            'details_text': 'Вы получите 7% кешбэка',
+            'full_description': 'Оплата образовательных программ и курсов.',
+            'price': 'Кешбэк за оплату обучения в аккредитованных учебных заведениях, онлайн-курсах и платформах для повышения квалификации.',
         },
         {
             'id': 2,
             'title': 'Кафе и рестораны',
             'image_url': 'http://127.0.0.1:9000/web/free-icon-restaurant-1689246.png',
-            'alt': 'Кафе и рестораны',
-            'details_text': ' Вы получите от 1,33% до 6,7%',
+            'details_text': 'Вы получите 5% кешбэка',
+            'full_description': 'Оплата в заведениях общественного питания.',
+            'price': 'Кешбэк за покупки в ресторанах, кафе, барах и сетях быстрого питания, включая доставку еды.',
         },
         {
             'id': 3,
             'title': 'Спортивные товары',
             'image_url': 'http://127.0.0.1:9000/web/free-icon-basketball-4645268.png',
-            'alt': 'Спортивные товары',
-            'details_text': ' Вы получите от 0,31% до 6,92%',
+            'details_text': 'Вы получите 5% кешбэка',
+            'full_description': 'Покупки спортивного инвентаря и экипировки.',
+            'price': 'Кешбэк за приобретение спортивных товаров, одежды, инвентаря и оборудования в специализированных магазинах и онлайн-платформах.',
         },
         {
             'id': 4,
             'title': 'Аптеки',
             'image_url': 'http://127.0.0.1:9000/web/free-icon-online-pharmacy-4435601.png',
-            'alt': 'Аптеки',
-            'details_text': 'Вы получите от 0,75% до 1,13%',
+            'details_text': 'Вы получите 10% кешбэка',
+            'full_description': 'Покупка медикаментов и товаров для здоровья.',
+            'price': 'Кешбэк за оплату в аптеках, профильных магазинах товаров для здоровья и онлайн-аптеках.',
         },
+       {
+            'id': 5,
+            'title': 'Туризм',
+            'image_url': 'http://127.0.0.1:9000/web/free-icon-hiking-1974052.png',
+            'details_text': 'Вы получите 7% кешбэка',
+            'full_description': 'Оплата туристических услуг, включая бронирование отелей и билетов.',
+            'price': 'Кешбэк за услуги в туристических агентствах, онлайн-сервисах для путешествий и при бронировании экскурсионных туров.'
+},
+{
+            'id': 6,
+            'title': 'Электроника',
+            'image_url': 'http://127.0.0.1:9000/web/free-icon-electronics-1692714.png',
+            'details_text': 'Вы получите 5% кешбэка',
+            'full_description': 'Покупка техники и электроники.',
+            'price': 'Кешбэк за приобретение смартфонов, компьютеров, телевизоров и других гаджетов в магазинах и онлайн-платформах.'
+}
+
     ]
-    
+
+# Пример данных для корзины
+categories_cashbacks = [
+    {
+        'order_id': 1,  # Ссылается на идентификатор заказа
+        'spent': {'amount': 35435, 'range': 'Сентябрь'},
+        'cashback_received': 2480,
+        'image_url': 'http://127.0.0.1:9000/web/free-icon-books-4645290.png',
+        'details_text': '7% кешбэка по данной категории'
+    },
+    {
+        'order_id': 2,  # Ссылается на идентификатор заказа
+        'spent': {'amount': 17342, 'range': 'Сентябрь'},
+        'cashback_received': 867,
+        'image_url': 'http://127.0.0.1:9000/web/free-icon-restaurant-1689246.png',
+        'details_text': '5% кешбэка по данной категории'
+    },
+    {
+        'order_id': 5,  # Ссылается на идентификатор заказа
+        'spent': {'amount': 9983, 'range': 'Сентябрь'},
+        'cashback_received': 699,
+        'image_url': 'http://127.0.0.1:9000/web/free-icon-hiking-1974052.png',
+        'details_text': '7% кешбэка по данной категории'
+    },
+]
+
+def cashback_services(request):
+    cashbacks = get_cashbacks()
+    item_count = len(categories_cashbacks)  # Количество карточек в корзине
+
     # Обработка запроса поиска
     search_query = request.GET.get('search', '')
-
     if search_query:
-        orders = [order for order in orders if search_query.lower() in order['title'].lower()]
+        cashbacks = [order for order in cashbacks if search_query.lower() in order['title'].lower()]
 
-    return render(request, 'index.html', {'data': {
-        'current_date': date.today(),
-        'orders': orders,
-    }})
-
+    return render(request, 'index.html', {
+        'data': {
+            'current_date': date.today(),
+            'cashbacks': cashbacks,
+            'cart_item_count': item_count  # Передаем количество карточек в корзине
+        }
+    })
 
 def GetOrder(request, id):
-    # Данные для страницы с информацией о товаре
-    orders = [
-        {
-            'id': 1,
-            'title': 'Образование',
-            'image_url': 'http://127.0.0.1:9000/web/free-icon-books-4645290.png',
-            'description': 'Оплата образовательных услуг.',
-            'price': 'Подписка на телеграмм.',
-            'quantity': '5213 шт.',
-        },
-        {
-            'id': 2,
-            'title': 'Кафе и рестораны',
-            'image_url': 'http://127.0.0.1:9000/web/free-icon-restaurant-1689246.png',
-            'description': 'Популярный бренд одежды.',
-            'price': 'Подписка на вконтакте.',
-            'quantity': '1230 шт.',
-        },
-        {
-            'id': 3,
-            'title': 'Спортивные товары',
-            'image_url': 'http://127.0.0.1:9000/web/free-icon-basketball-4645268.png',
-            'description': 'Покупки в спортивных магазинах',
-            'price': 'Регистрация на сайте Алиэкспресса.',
-            'quantity': '7321 шт.',
-        },
-        {
-            'id': 4,
-            'title': 'Аптеки',
-            'image_url': 'http://127.0.0.1:9000/web/free-icon-online-pharmacy-4435601.png',
-            'description': 'Оплата в аптеках и профильных магазинах медикаментов',
-            'price': 'Купить 3 товара на Авито.',
-            'quantity': '8321 шт.',
-        },
-    ]
-    
+    cashbacks = get_cashbacks()
+
     # Найти товар по id
-    item = next((order for order in orders if order['id'] == id), None)
-    
+    item = next((order for order in cashbacks if order['id'] == id), None)
     if item is None:
         return render(request, '404.html')  # Страница 404, если товар не найден
 
     return render(request, 'order.html', {'data': item})
 
-def cart(request):
-    # Страница корзины с элементами, сохраненными в сессии
-    cart_items = request.session.get('cart', [])
-    return render(request, 'cart.html', {'data': {
-        'cart_items': cart_items
-    }})
+def categories_cashbacks_view(request):
+    cashbacks = get_cashbacks()
+    cart_items_with_titles = []
 
-def add_to_cart(request, id):
-    cart = request.session.get('cart', [])
-    # Проверьте, чтобы не было дубликатов в корзине
-    if not any(item['id'] == id for item in cart):
-        cart.append({'id': id, 'title': f'Кэшбэк {id}'})
-        request.session['cart'] = cart
-    return redirect('cart')
+    for item in categories_cashbacks:
+        order = next((order for order in cashbacks if order['id'] == item['order_id']), None)
+        if order:
+            item['title'] = order['title']
+        cart_items_with_titles.append(item)
 
-def clear_cart(request):
-    # Очистка корзины
-    request.session.pop('cart', None)
-    return redirect('cart')
+    return render(request, 'cashbacks.html', {
+        'data': {
+            'categories_cashbacks': cart_items_with_titles,
+            'current_month': 'Сентябрь'  # или динамически определяемый месяц
+        }
+    })
+
+
+
