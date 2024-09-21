@@ -1,160 +1,139 @@
 from django.shortcuts import render
 from datetime import date
+import re  # Для извлечения процентов
 
 # Вынесенная коллекция заказов
-def get_cashbacks():
-    return [
-        {
-            'id': 1,
-            'title': 'Образование',
-            'image_url': 'http://127.0.0.1:9000/web/free-icon-books-4645290.png',
-            'details_text': 'Вы получите 7% кешбэка',
-            'full_description': 'Оплата образовательных программ и курсов.',
-            'price': 'Кешбэк за оплату обучения в аккредитованных учебных заведениях, онлайн-курсах и платформах для повышения квалификации.',
-        },
-        {
-            'id': 2,
-            'title': 'Кафе и рестораны',
-            'image_url': 'http://127.0.0.1:9000/web/free-icon-restaurant-1689246.png',
-            'details_text': 'Вы получите 5% кешбэка',
-            'full_description': 'Оплата в заведениях общественного питания.',
-            'price': 'Кешбэк за покупки в ресторанах, кафе, барах и сетях быстрого питания, включая доставку еды.',
-        },
-         {
-            'id': 3,
-            'title': 'Спортивные товары',
-            'image_url': 'http://127.0.0.1:9000/web/free-icon-basketball-4645268.png',
-            'details_text': 'Вы получите 5% кешбэка',
-            'full_description': 'Покупки спортивного инвентаря и экипировки.',
-            'price': 'Кешбэк за приобретение спортивных товаров, одежды, инвентаря и оборудования в специализированных магазинах и онлайн-платформах.',
-        },
-        {
-            'id': 4,
-            'title': 'Аптеки',
-            'image_url': 'http://127.0.0.1:9000/web/free-icon-online-pharmacy-4435601.png',
-            'details_text': 'Вы получите 10% кешбэка',
-            'full_description': 'Покупка медикаментов и товаров для здоровья.',
-            'price': 'Кешбэк за оплату в аптеках, профильных магазинах товаров для здоровья и онлайн-аптеках.',
-        },
-        {
-            'id': 5,
-            'title': 'Туризм',
-            'image_url': 'http://127.0.0.1:9000/web/free-icon-hiking-1974052.png',
-            'details_text': 'Вы получите 7% кешбэка',
-            'full_description': 'Оплата туристических услуг, включая бронирование отелей и билетов.',
-            'price': 'Кешбэк за услуги в туристических агентствах, онлайн-сервисах для путешествий и при бронировании экскурсионных туров.',
-        },
-        {
-            'id': 6,
-            'title': 'Электроника',
-            'image_url': 'http://127.0.0.1:9000/web/free-icon-electronics-1692714.png',
-            'details_text': 'Вы получите 5% кешбэка',
-            'full_description': 'Покупка техники и электроники.',
-            'price': 'Кешбэк за приобретение смартфонов, компьютеров, телевизоров и других гаджетов в магазинах и онлайн-платформах.',
-        },
-        # Другие категории...
-    ]
+cashbacks = [
+    {
+        'id': 1,
+        'title': 'Образование',
+        'image_url': 'http://127.0.0.1:9000/web/free-icon-books-4645290.png',
+        'details_text': 'Вы получите 7% кешбэка',
+        'full_description': 'Оплата образовательных программ и курсов.',
+        'price': 'Кешбэк за оплату обучения в аккредитованных учебных заведениях, онлайн-курсах и платформах для повышения квалификации.',
+    },
+    {
+        'id': 2,
+        'title': 'Кафе и рестораны',
+        'image_url': 'http://127.0.0.1:9000/web/free-icon-restaurant-1689246.png',
+        'details_text': 'Вы получите 5% кешбэка',
+        'full_description': 'Оплата в заведениях общественного питания.',
+        'price': 'Кешбэк за покупки в ресторанах, кафе, барах и сетях быстрого питания, включая доставку еды.',
+    },
+    {
+        'id': 3,
+        'title': 'Спортивные товары',
+        'image_url': 'http://127.0.0.1:9000/web/free-icon-basketball-4645268.png',
+        'details_text': 'Вы получите 5% кешбэка',
+        'full_description': 'Покупки спортивного инвентаря и экипировки.',
+        'price': 'Кешбэк за приобретение спортивных товаров, одежды, инвентаря и оборудования в специализированных магазинах и онлайн-платформах.',
+    },
+    {
+        'id': 4,
+        'title': 'Аптеки',
+        'image_url': 'http://127.0.0.1:9000/web/free-icon-online-pharmacy-4435601.png',
+        'details_text': 'Вы получите 10% кешбэка',
+        'full_description': 'Покупка медикаментов и товаров для здоровья.',
+        'price': 'Кешбэк за оплату в аптеках, профильных магазинах товаров для здоровья и онлайн-аптеках.',
+    },
+    {
+        'id': 5,
+        'title': 'Туризм',
+        'image_url': 'http://127.0.0.1:9000/web/free-icon-hiking-1974052.png',
+        'details_text': 'Вы получите 7% кешбэка',
+        'full_description': 'Оплата туристических услуг, включая бронирование отелей и билетов.',
+        'price': 'Кешбэк за услуги в туристических агентствах, онлайн-сервисах для путешествий и при бронировании экскурсионных туров.',
+    },
+    {
+        'id': 6,
+        'title': 'Электроника',
+        'image_url': 'http://127.0.0.1:9000/web/free-icon-electronics-1692714.png',
+        'details_text': 'Вы получите 5% кешбэка',
+        'full_description': 'Покупка техники и электроники.',
+        'price': 'Кешбэк за приобретение смартфонов, компьютеров, телевизоров и других гаджетов в магазинах и онлайн-платформах.',
+    },
+]
 
-# Пример данных для корзины
+# Мои кешбэки за месяц с ID заявки
 categories_cashbacks = [
     {
-        'order_id': 1,  # Ссылается на идентификатор заказа
-        'month_id': 1,  # Привязка к сентябрю
-        'spent': {'amount': 35435, 'range': 'Сентябрь'},
-        'image_url': 'http://127.0.0.1:9000/web/free-icon-books-4645290.png',
-        'details_text': '7% кешбэка по данной категории'
+        'order_id': 1,
+        'month': 'Сентябрь',
+        'items': [
+            {'cashback_id': 1, 'spent': 33213},
+            {'cashback_id': 2, 'spent': 12132},
+            {'cashback_id': 3, 'spent': 53123},
+        ]
     },
-    {
-        'order_id': 2,
-        'month_id': 1,
-        'spent': {'amount': 17342, 'range': 'Сентябрь'},
-        'image_url': 'http://127.0.0.1:9000/web/free-icon-restaurant-1689246.png',
-        'details_text': '5% кешбэка по данной категории'
-    },
-    {
-        'order_id': 3,
-        'month_id': 1,
-        'spent': {'amount': 9779, 'range': 'Сентябрь'},
-        'image_url': 'http://127.0.0.1:9000/web/free-icon-hiking-1974052.png',
-        'details_text': '7% кешбэка по данной категории'
-    },
-    # Другие категории...
 ]
 
-# Отдельный массив для полученного кешбэка
-cashback_received_data = [
-    {'order_id': 1, 'month_id': 1, 'cashback_received': 2480},  # Привязка кешбэка к заказу и месяцу
-    {'order_id': 2, 'month_id': 1, 'cashback_received': 867},
-    {'order_id': 3, 'month_id': 1, 'cashback_received': 685},
-    # Другие данные кешбэков...
-]
-
-# Массив месяцев
-months = {
-    1: 'Сентябрь',
-    # Добавить другие месяцы при необходимости
-}
+# Вспомогательная функция для извлечения процента кешбэка из текста
+def extract_cashback_percentage(details_text):
+    match = re.search(r'(\d+)%', details_text)
+    if match:
+        return int(match.group(1)) / 100
+    return 0
 
 def cashback_services(request):
-    cashbacks = get_cashbacks()
-    item_count = len(categories_cashbacks)  # Количество карточек в корзине
+    # Количество карточек в корзине
+    item_count = sum(len(category['items']) for category in categories_cashbacks)
 
     # Обработка запроса поиска
     search_query = request.GET.get('cashback_categories', '')
     if search_query:
-        cashbacks = [order for order in cashbacks if search_query.lower() in order['title'].lower()]
+        filtered_cashbacks = [cashback for cashback in cashbacks if search_query.lower() in cashback['title'].lower()]
+    else:
+        filtered_cashbacks = cashbacks
 
-    # Указываем id месяца, например, 1 для сентября
-    current_month_id = 1
+    current_month_id = 1  # Задайте нужный месяц
 
     return render(request, 'index.html', {
         'data': {
             'current_date': date.today(),
-            'cashbacks': cashbacks,
-            'cart_item_count': item_count,  # Передаем количество карточек в корзине
-            'current_month_id': current_month_id  # Передаем id месяца
+            'cashbacks': filtered_cashbacks,
+            'cart_item_count': item_count,
+            'current_month_id': current_month_id,
+            'search_query': search_query  # Добавлено для сохранения значения поиска
         }
     })
 
 def GetOrder(request, id):
-    cashbacks = get_cashbacks()
-
-    # Найти товар по id
-    item = next((order for order in cashbacks if order['id'] == id), None)
+    item = next((cashback for cashback in cashbacks if cashback['id'] == id), None)
     if item is None:
-        return render(request, '404.html')  # Страница 404, если товар не найден
+        return render(request, '404.html')
 
     return render(request, 'order.html', {'data': item})
 
-def categories_cashbacks_view(request, month_id):
-    cashbacks = get_cashbacks()
+def categories_cashbacks_view(request, order_id):
     cart_items_with_titles = []
 
-    # Фильтрация данных по месяцу
-    selected_cashbacks = [item for item in categories_cashbacks if item['month_id'] == month_id]
-
-    # Добавляем данные о кешбэке к каждой карточке
-    for item in selected_cashbacks:
-        order = next((order for order in cashbacks if order['id'] == item['order_id']), None)
-        cashback_info = next((cashback for cashback in cashback_received_data if cashback['order_id'] == item['order_id'] and cashback['month_id'] == month_id), None)
-
-        if order:
-            item['title'] = order['title']
-
-        if cashback_info:
-            item['cashback_received'] = cashback_info['cashback_received']
-
-        cart_items_with_titles.append(item)
-
-    current_month = months.get(month_id, 'Неизвестный месяц')
+    # Находим категории по идентификатору заявки (order_id)
+    selected_order = next((order for order in categories_cashbacks if order['order_id'] == order_id), None)
+    
+    if selected_order:
+        for item in selected_order['items']:
+            cashback = next((cashback for cashback in cashbacks if cashback['id'] == item['cashback_id']), None)
+            if cashback:
+                # Извлекаем процент кешбэка
+                cashback_percentage = extract_cashback_percentage(cashback['details_text'])
+                # Рассчитываем полученный кешбэк и округляем до целого числа
+                cashback_received = int(item['spent'] * cashback_percentage)
+                
+                cart_items_with_titles.append({
+                    'title': cashback['title'],
+                    'spent': item['spent'],
+                    'cashback_received': cashback_received,  # Добавляем округленный полученный кешбэк
+                    'image_url': cashback['image_url'],
+                    'details_text': cashback['details_text'],
+                    'order_id': selected_order['order_id']  # Поле ID заявки
+                })
 
     return render(request, 'cashbacks.html', {
         'data': {
             'categories_cashbacks': cart_items_with_titles,
-            'current_month': current_month
+            'current_month': selected_order['month'] if selected_order else 'Неизвестный месяц'
         }
     })
-
 
 
 

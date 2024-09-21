@@ -4,7 +4,7 @@
 
 {% block content %}
 <form method="GET" action="" style="display: flex; align-items: center;">
-    <input type="text" name="cashback_categories" placeholder="Поиск по категориям" value="{{ request.GET.search }}" class="search-input">
+    <input type="text" name="cashback_categories" placeholder="Поиск по категориям" value="{{ request.GET.cashback_categories }}" class="search-input">
     <button type="submit" class="search-button">Найти</button>
     <a href="{% url 'cart' data.current_month_id %}" class="cart-button">  <!-- Передаем month_id -->
         Ваши кешбэки
@@ -24,4 +24,3 @@
     {% endfor %}
 </div>
 {% endblock %}
-
