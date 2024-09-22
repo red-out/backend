@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Кешбэки за {{ data.current_month }}{% endblock %}
+
+{% block content %}
+    <h1>Выбранные категории кешбэка за {{ data.current_month }}</h1>
+    <div class="cart-container">
+        {% if data.transactions %}
+            {% for transaction in data.transactions %}
+                <div class="cart-item">
+                    <img src="{{ transaction.image_url }}" alt="{{ transaction.category }}" class="cart-item-image">
+                    <div class="cart-item-content">
+                        <h3 class="cart-item-title">{{ transaction.category }}</h3>
+                        <p class="cart-item-details">{{ transaction.cashback_percentage_text }}</p>
+                    </div>
+                    <div class="cart-item-summary">
+                        <p class="cart-item-spent"><strong>Потрачено:</strong> {{ transaction.spent_amount }} ₽</p>
+                        <p class="cart-item-cashback"><strong>Получено кешбэка:</strong> {{ transaction.cashback_earned }} ₽</p>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>Нет кешбэков за выбранный месяц.</p>
+        {% endif %}
+    </div>
+{% endblock %}
+

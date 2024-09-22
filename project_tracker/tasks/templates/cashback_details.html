@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Информация о кешбэк-услуге {{ data.id }}{% endblock %}
+
+{% block content %}
+    <div class="cashback-det-details">
+        <img src="{{ data.image_url }}" alt="{{ data.category }}" class="cashback-det-image">
+        <div class="cashback-det-info">
+            <h2 class="cashback-det-title">{{ data.category }}</h2>
+            <p class="cashback-det-description">{{ data.full_description }}</p>
+            <p class="cashback-det-price">{{ data.details }}</p>
+        </div>
+    </div>
+    <div class="cashback-det-actions">
+    </div>
+{% endblock %}
+

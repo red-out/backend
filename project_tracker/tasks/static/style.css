@@ -185,7 +185,7 @@ form button:hover {
 
 
 /* Стили для карточки с информацией об услуге */
-.order-details {
+.cashback-det-details {
     text-align: center;
     padding: 20px;
     background-color: #fff;
@@ -196,7 +196,7 @@ form button:hover {
     margin: 0 auto;   /* Центрирование карточки */
 }
 
-.order-card {
+.cashback-det-card {
     display: flex;
     align-items: center;
     justify-content: space-between; /* Равномерное распределение элементов */
@@ -209,7 +209,7 @@ form button:hover {
     max-width: 100%; /* Убирает ограничение по ширине */
 }
 
-.order-image {
+.cashback-det-image {
     width: 200px; /* Увеличение ширины изображения */
     height: 130px; /* Увеличение высоты изображения */
     object-fit: contain;
@@ -217,32 +217,32 @@ form button:hover {
     margin-right: 20px;
 }
 
-.order-info {
+.cashback-det-info {
     text-align: left;
     flex-grow: 1; /* Позволяет информации занимать больше пространства */
 }
 
-.order-title {
+.cashback-det-title {
     font-size: 2rem; /* Увеличение шрифта заголовка */
     color: #333;
     margin: 0 0 10px 0;
 }
 
-.order-description {
+.cashback-det-description {
     font-size: 1.2rem; /* Увеличение шрифта описания */
     color: #666;
     margin: 10px 0;
 }
 
-.order-price,
-.order-quantity {
+.cashback-det-price,
+.cashback-det-quantity {
     font-size: 1.5rem; /* Увеличение шрифта цены и количества */
     color: #000;
     margin: 5px 0;
 }
 
 /* Стили для кнопок */
-.cart-actions {
+.cashback-det-actions {
     margin-top: 30px;
     display: flex;
     justify-content: center;
