@@ -33,6 +33,16 @@ class CashbackOrder(models.Model):
     completion_date = models.DateTimeField(null=True, blank=True)
     creator = models.ForeignKey(User, related_name='orders_created', on_delete=models.CASCADE)
     month = models.CharField(max_length=20)  # Поле для месяца
+    total_spent_month = models.PositiveIntegerField(null=True, blank=True)  # Поле для общей суммы
+
+    def calculate_total_spent(self):
+        if self.status == 'completed':
+            total = sum(service.total_spent for service in self.cashbackorderservice_set.all())
+            self.total_spent_month = total
+            self.save(update_fields=['total_spent_month'])
+        else:
+            self.total_spent_month = None
+            self.save(update_fields=['total_spent_month'])
 
     def __str__(self):
         return f"Заказ {self.id} от {self.creator.username}"

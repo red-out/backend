@@ -4,6 +4,14 @@
 
 {% block content %}
     <h1>Выбранные категории кешбэка за {{ data.current_month }}</h1>
+
+    <!-- Блок с общими тратами за месяц -->
+    {% if data.total_spent_month %}
+        <div class="total-spent-month">
+            <h2>Общая трата за месяц: {{ data.total_spent_month }} руб.</h2>
+        </div>
+    {% endif %}
+    
     <div class="cart-container">
         {% if data.categories_cashbacks %}
             {% for item in data.categories_cashbacks %}
