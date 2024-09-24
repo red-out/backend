@@ -6,6 +6,43 @@
 <form method="GET" action="" style="display: flex; align-items: center;">
     <input type="text" name="cashback_categories" placeholder="Поиск по категориям" value="{{ request.GET.cashback_categories }}" class="search-input">
     <button type="submit" class="search-button">Найти</button>
+    
+    {% if data.current_report_id %}  <!-- Проверяем, существует ли current_report_id -->
+        <a href="{% url 'monthly_cashbacks' data.current_report_id %}" class="cart-button">
+            Ваши кешбэки
+            <span class="cart-item-count">({{ data.cart_item_count }})</span>
+        </a>
+    {% else %}
+        <span class="cart-button disabled">
+            Ваши кешбэки
+            <span class="cart-item-count">({{ data.cart_item_count }})</span>
+        </span>
+    {% endif %}
+</form>
+
+<div class="cards-container">
+    {% for service in data.services %}
+        <div class="card">
+            <a href="{% url 'cashback_details' service.id %}">
+                <img src="{{ service.image_url }}" alt="{{ service.category }}" class="card-image">
+                <h3>{{ service.category }}</h3>
+                <p>{{ service.cashback_percentage_text }}</p>
+            </a>
+        </div>
+    {% empty %}
+        <p>Кешбэк-услуги не найдены.</p>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% comment %} {% extends 'base.html' %}
+
+{% block title %}Главная страница{% endblock %}
+
+{% block content %}
+<form method="GET" action="" style="display: flex; align-items: center;">
+    <input type="text" name="cashback_categories" placeholder="Поиск по категориям" value="{{ request.GET.cashback_categories }}" class="search-input">
+    <button type="submit" class="search-button">Найти</button>
     <a href="{% url 'monthly_cashbacks' data.current_report_id %}" class="cart-button">
         Ваши кешбэки
         <span class="cart-item-count">({{ data.cart_item_count }})</span>
@@ -25,7 +62,7 @@
         <p>Кешбэк-услуги не найдены.</p>
     {% endfor %}
 </div>
-{% endblock %}
+{% endblock %} {% endcomment %}
 
 {% comment %} {% extends 'base.html' %}
 

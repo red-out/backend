@@ -1,10 +1,19 @@
 from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 from datetime import date
 from .models import CashbackService, CashbackOrder, CashbackOrderService
+import random
+import re
 
 def all_cashback_services(request):
-    # Количество карточек в заявке
-    transaction_count = CashbackOrderService.objects.filter(order__creator=request.user).count()
+    # Получаем заявку в статусе 'draft'
+    draft_order = CashbackOrder.objects.filter(creator=request.user, status='draft').first()
+    
+    # Количество карточек в текущей заявке
+    transaction_count = 0
+    if draft_order:
+        transaction_count = CashbackOrderService.objects.filter(order=draft_order).count()
 
     # Обработка запроса поиска
     search_query = request.GET.get('cashback_categories', '')
@@ -13,7 +22,7 @@ def all_cashback_services(request):
     else:
         filtered_services = CashbackService.objects.filter(status='active')
 
-    current_report_id = 1  # Задайте нужный отчет
+    current_report_id = draft_order.id if draft_order else None  # Получаем ID черновика, если он существует
 
     return render(request, 'index.html', {
         'data': {
@@ -27,28 +36,69 @@ def all_cashback_services(request):
 
 def cashback_details(request, id):
     service = get_object_or_404(CashbackService, id=id)
+
+    # Получаем или создаем черновик для текущего пользователя
+    order, created = CashbackOrder.objects.get_or_create(
+        creator=request.user,
+        status='draft',
+        defaults={'month': date.today().strftime("%B")}  # Пример месяца
+    )
+
+    # Если заявка только что создана, добавляем случайную услугу
+    if created:
+        random_service = random.choice(CashbackService.objects.filter(status='active'))
+        CashbackOrderService.objects.create(
+            order=order,
+            service=random_service,
+            total_spent=77777  # Устанавливаем потраченную сумму
+        )
+
     return render(request, 'cashback_details.html', {'data': service})
 
 def monthly_cashbacks_view(request, report_id):
     transactions_with_titles = []
-    selected_report = get_object_or_404(CashbackOrder, id=report_id)
+    selected_report = get_object_or_404(CashbackOrder, id=report_id, creator=request.user, status__in=['draft', 'active'])
 
     for transaction in CashbackOrderService.objects.filter(order=selected_report):
+        cashback_received = extract_cashback_percentage(transaction.service.cashback_percentage_text) * transaction.total_spent
+        
         transactions_with_titles.append({
+            'title': transaction.service.category,
             'category': transaction.service.category,
-            'spent_amount': transaction.total_spent,
-            'cashback_earned': extract_cashback_percentage(transaction.service.cashback_percentage_text) * transaction.total_spent,
+            'spent': transaction.total_spent,
+            'cashback_received': round(cashback_received),  # Округляем до целого числа
             'image_url': transaction.service.image_url,
+            'details_text': transaction.service.cashback_percentage_text,
             'cashback_percentage_text': transaction.service.cashback_percentage_text,
             'report_id': selected_report.id  
         })
 
     return render(request, 'monthly_cashbacks.html', {
         'data': {
-            'transactions': transactions_with_titles,
-            'current_month': selected_report.month
+            'categories_cashbacks': transactions_with_titles,
+            'current_month': selected_report.month,
+            'current_order_id': report_id  # Передаем ID заявки для удаления
         }
     })
+
+def delete_cashback_order(request, report_id):
+    if request.method == 'POST':
+        order = get_object_or_404(CashbackOrder, id=report_id, creator=request.user)
+        order.status = 'deleted'  # Изменение статуса на 'deleted'
+        order.save()
+
+        # Создаем новый черновик после удаления
+        new_order = CashbackOrder.objects.create(creator=request.user, status='draft', month=date.today().strftime("%B"))
+
+        # Добавляем случайную услугу в новую заявку
+        random_service = random.choice(CashbackService.objects.filter(status='active'))
+        CashbackOrderService.objects.create(
+            order=new_order,
+            service=random_service,
+            total_spent=77777  # Устанавливаем потраченную сумму
+        )
+
+        return HttpResponseRedirect(reverse('home'))  # Перенаправление на главную страницу
 
 def extract_cashback_percentage(cashback_percentage_text):
     match = re.search(r'(\d+)%', cashback_percentage_text)
@@ -56,145 +106,104 @@ def extract_cashback_percentage(cashback_percentage_text):
         return int(match.group(1)) / 100
     return 0
 
-# from django.shortcuts import render
+# from django.shortcuts import render, get_object_or_404
+# from django.http import HttpResponseRedirect
+# from django.urls import reverse
 # from datetime import date
-# import re  # Для извлечения процентов
+# from .models import CashbackService, CashbackOrder, CashbackOrderService
+# import re
 
-# # Вынесенная коллекция заказов
-# cashbacks = [
-#     {
-#         'id': 1,
-#         'title': 'Образование',
-#         'image_url': 'http://127.0.0.1:9000/web/free-icon-books-4645290.png',
-#         'details_text': 'Вы получите 7% кешбэка',
-#         'full_description': 'Оплата образовательных программ и курсов.',
-#         'price': 'Кешбэк за оплату обучения в аккредитованных учебных заведениях, онлайн-курсах и платформах для повышения квалификации.',
-#     },
-#     {
-#         'id': 2,
-#         'title': 'Кафе и рестораны',
-#         'image_url': 'http://127.0.0.1:9000/web/free-icon-restaurant-1689246.png',
-#         'details_text': 'Вы получите 5% кешбэка',
-#         'full_description': 'Оплата в заведениях общественного питания.',
-#         'price': 'Кешбэк за покупки в ресторанах, кафе, барах и сетях быстрого питания, включая доставку еды.',
-#     },
-#     {
-#         'id': 3,
-#         'title': 'Спортивные товары',
-#         'image_url': 'http://127.0.0.1:9000/web/free-icon-basketball-4645268.png',
-#         'details_text': 'Вы получите 5% кешбэка',
-#         'full_description': 'Покупки спортивного инвентаря и экипировки.',
-#         'price': 'Кешбэк за приобретение спортивных товаров, одежды, инвентаря и оборудования в специализированных магазинах и онлайн-платформах.',
-#     },
-#     {
-#         'id': 4,
-#         'title': 'Аптеки',
-#         'image_url': 'http://127.0.0.1:9000/web/free-icon-online-pharmacy-4435601.png',
-#         'details_text': 'Вы получите 10% кешбэка',
-#         'full_description': 'Покупка медикаментов и товаров для здоровья.',
-#         'price': 'Кешбэк за оплату в аптеках, профильных магазинах товаров для здоровья и онлайн-аптеках.',
-#     },
-#     {
-#         'id': 5,
-#         'title': 'Туризм',
-#         'image_url': 'http://127.0.0.1:9000/web/free-icon-hiking-1974052.png',
-#         'details_text': 'Вы получите 7% кешбэка',
-#         'full_description': 'Оплата туристических услуг, включая бронирование отелей и билетов.',
-#         'price': 'Кешбэк за услуги в туристических агентствах, онлайн-сервисах для путешествий и при бронировании экскурсионных туров.',
-#     },
-#     {
-#         'id': 6,
-#         'title': 'Электроника',
-#         'image_url': 'http://127.0.0.1:9000/web/free-icon-electronics-1692714.png',
-#         'details_text': 'Вы получите 5% кешбэка',
-#         'full_description': 'Покупка техники и электроники.',
-#         'price': 'Кешбэк за приобретение смартфонов, компьютеров, телевизоров и других гаджетов в магазинах и онлайн-платформах.',
-#     },
-# ]
+# def all_cashback_services(request):
+#     # Получаем или создаем заявку в статусе 'draft'
+#     draft_order, created = CashbackOrder.objects.get_or_create(
+#         creator=request.user,
+#         status='draft',
+#         defaults={'month': date.today().strftime("%B")}  # Пример месяца
+#     )
 
-# # Мои кешбэки за месяц с ID заявки
-# categories_cashbacks = [
-#     {
-#         'order_id': 1,
-#         'month': 'Сентябрь',
-#         'items': [
-#             {'cashback_id': 1, 'spent': 33213},
-#             {'cashback_id': 2, 'spent': 12132},
-#             {'cashback_id': 3, 'spent': 53123},
-#         ]
-#     },
-# ]
-
-# # Вспомогательная функция для извлечения процента кешбэка из текста
-# def extract_cashback_percentage(details_text):
-#     match = re.search(r'(\d+)%', details_text)
-#     if match:
-#         return int(match.group(1)) / 100
-#     return 0
-
-# def cashback_services(request):
-#     # Количество карточек в корзине
-#     item_count = sum(len(category['items']) for category in categories_cashbacks)
+#     # Количество карточек в текущем черновике
+#     transaction_count = CashbackOrderService.objects.filter(order=draft_order).count()
 
 #     # Обработка запроса поиска
 #     search_query = request.GET.get('cashback_categories', '')
 #     if search_query:
-#         filtered_cashbacks = [cashback for cashback in cashbacks if search_query.lower() in cashback['title'].lower()]
+#         filtered_services = CashbackService.objects.filter(category__icontains=search_query, status='active')
 #     else:
-#         filtered_cashbacks = cashbacks
+#         filtered_services = CashbackService.objects.filter(status='active')
 
-#     current_month_id = 1  # Задайте нужный месяц
+#     current_report_id = draft_order.id if draft_order else None  # Получаем ID черновика, если он существует
 
 #     return render(request, 'index.html', {
 #         'data': {
 #             'current_date': date.today(),
-#             'cashbacks': filtered_cashbacks,
-#             'cart_item_count': item_count,
-#             'current_month_id': current_month_id,
-#             'search_query': search_query  # Добавлено для сохранения значения поиска
+#             'services': filtered_services,
+#             'cart_item_count': transaction_count,
+#             'current_report_id': current_report_id,
+#             'search_query': search_query
 #         }
 #     })
 
-# def GetOrder(request, id):
-#     item = next((cashback for cashback in cashbacks if cashback['id'] == id), None)
-#     if item is None:
-#         return render(request, '404.html')
+# def cashback_details(request, id):
+#     service = get_object_or_404(CashbackService, id=id)
 
-#     return render(request, 'order.html', {'data': item})
+#     # Получаем или создаем черновик для текущего пользователя
+#     order, created = CashbackOrder.objects.get_or_create(
+#         creator=request.user,
+#         status='draft',
+#         defaults={'month': date.today().strftime("%B")}  # Пример месяца
+#     )
 
-# def categories_cashbacks_view(request, order_id):
-#     cart_items_with_titles = []
+#     # Проверяем, была ли услуга уже добавлена в заявку
+#     cashback_order_service, created_service = CashbackOrderService.objects.get_or_create(
+#         order=order,
+#         service=service,
+#         defaults={'total_spent': 0}  # Устанавливаем начальное значение
+#     )
 
-#     # Находим категории по идентификатору заявки (order_id)
-#     selected_order = next((order for order in categories_cashbacks if order['order_id'] == order_id), None)
-    
-#     if selected_order:
-#         for item in selected_order['items']:
-#             cashback = next((cashback for cashback in cashbacks if cashback['id'] == item['cashback_id']), None)
-#             if cashback:
-#                 # Извлекаем процент кешбэка
-#                 cashback_percentage = extract_cashback_percentage(cashback['details_text'])
-#                 # Рассчитываем полученный кешбэк и округляем до целого числа
-#                 cashback_received = int(item['spent'] * cashback_percentage)
-                
-#                 cart_items_with_titles.append({
-#                     'title': cashback['title'],
-#                     'spent': item['spent'],
-#                     'cashback_received': cashback_received,  # Добавляем округленный полученный кешбэк
-#                     'image_url': cashback['image_url'],
-#                     'details_text': cashback['details_text'],
-#                     'order_id': selected_order['order_id']  # Поле ID заявки
-#                 })
+#     if not created_service:
+#         # Если услуга уже есть, обновляем total_spent
+#         cashback_order_service.total_spent += 100  # Пример добавления суммы
+#         cashback_order_service.save()
 
-#     return render(request, 'cashbacks.html', {
+#     return render(request, 'cashback_details.html', {'data': service})
+
+# def monthly_cashbacks_view(request, report_id):
+#     transactions_with_titles = []
+#     selected_report = get_object_or_404(CashbackOrder, id=report_id, creator=request.user, status__in=['draft', 'active'])
+
+#     # Получаем услуги, относящиеся к данной заявке
+#     for transaction in CashbackOrderService.objects.filter(order=selected_report):
+#         cashback_received = extract_cashback_percentage(transaction.service.cashback_percentage_text) * transaction.total_spent
+        
+#         transactions_with_titles.append({
+#             'title': transaction.service.category,
+#             'category': transaction.service.category,
+#             'spent': transaction.total_spent,
+#             'cashback_received': round(cashback_received),  # Округляем до целого числа
+#             'image_url': transaction.service.image_url,
+#             'details_text': transaction.service.cashback_percentage_text,
+#             'cashback_percentage_text': transaction.service.cashback_percentage_text,
+#             'report_id': selected_report.id  
+#         })
+
+#     return render(request, 'monthly_cashbacks.html', {
 #         'data': {
-#             'categories_cashbacks': cart_items_with_titles,
-#             'current_month': selected_order['month'] if selected_order else 'Неизвестный месяц'
+#             'categories_cashbacks': transactions_with_titles,
+#             'current_month': selected_report.month,
+#             'current_order_id': report_id  # Передаем ID заявки для удаления
 #         }
 #     })
 
+# def delete_cashback_order(request, report_id):
+#     if request.method == 'POST':
+#         order = get_object_or_404(CashbackOrder, id=report_id, creator=request.user)
+#         order.status = 'deleted'  # Изменение статуса на 'deleted'
+#         order.save()
+#         return HttpResponseRedirect(reverse('home'))  # Перенаправление на главную страницу
 
-
-
-
+# def extract_cashback_percentage(cashback_percentage_text):
+#     match = re.search(r'(\d+)%', cashback_percentage_text)
+#     if match:
+#         return int(match.group(1)) / 100
+#     return 0
 

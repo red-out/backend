@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Выбранные категории кешбэка{% endblock %}
+
+{% block content %}
+    <h1>Выбранные категории кешбэка за {{ data.current_month }}</h1>
+    <div class="cart-container">
+        {% if data.categories_cashbacks %}
+            {% for item in data.categories_cashbacks %}
+                <div class="cart-item">
+                    <img src="{{ item.image_url }}" alt="{{ item.title }}" class="cart-item-image">
+                    <div class="cart-item-content">
+                        <h3 class="cart-item-title">{{ item.title }}</h3>
+                        <p class="cart-item-details">{{ item.cashback_percentage_text }}</p>
+                    </div>
+                    <div class="cart-item-summary">
+                        <p class="cart-item-spent"><strong>Потрачено:</strong> {{ item.spent }} руб.</p>
+                        <p class="cart-item-cashback"><strong>Получено кешбэка:</strong> {{ item.cashback_received }} руб.</p>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>Корзина пуста для выбранного месяца.</p>
+        {% endif %}
+    </div>
+
+    <!-- Форма для удаления заявки -->
+    <div class="delete-order-form">
+        {% if data.current_order_id %}  <!-- Проверяем, существует ли ID текущей заявки -->
+            <form action="{% url 'delete_cashback_order' report_id=data.current_order_id %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn-delete">Удалить заявку</button>
+            </form>
+        {% else %}
+            <p>Нет активной заявки для удаления.</p>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% comment %} {% extends 'base.html' %}
+
+{% block title %}Выбранные категории кешбэка{% endblock %}
+
+{% block content %}
+    <h1>Выбранные категории кешбэка за {{ data.current_month }}</h1>
+    <div class="cart-container">
+        {% if data.categories_cashbacks %}
+            {% for item in data.categories_cashbacks %}
+                <div class="cart-item">
+                    <img src="{{ item.image_url }}" alt="{{ item.title }}" class="cart-item-image">
+                    <div class="cart-item-content">
+                        <h3 class="cart-item-title">{{ item.title }}</h3>
+                        <p class="cart-item-details">{{ item.cashback_percentage_text }}</p>
+                    </div>
+                    <div class="cart-item-summary">
+                        <p class="cart-item-spent"><strong>Потрачено:</strong> {{ item.spent }} руб.</p>
+                        <p class="cart-item-cashback"><strong>Получено кешбэка:</strong> {{ item.cashback_received }} руб.</p>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>Корзина пуста для выбранного месяца.</p>
+        {% endif %}
+    </div>
+
+    <!-- Форма для удаления заявки -->
+    <div class="delete-order-form">
+        <form action="{% url 'delete_cashback_order' report_id=data.current_order_id %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn-delete">Удалить заявку</button>
+        </form>
+    </div>
+{% endblock %} {% endcomment %}
+
+{% comment %} {% extends 'base.html' %}
+
+{% block title %}Корзина{% endblock %}
+
+{% block content %}
+    <h1>Выбранные категории кешбэка за {{ data.current_month }}</h1>
+    <div class="cart-container">
+        {% if data.categories_cashbacks %}
+            {% for item in data.categories_cashbacks %}
+                <div class="cart-item">
+                    <img src="{{ item.image_url }}" alt="{{ item.title }}" class="cart-item-image">
+                    <div class="cart-item-content">
+                        <h3 class="cart-item-title">{{ item.title }}</h3>
+                        <p class="cart-item-details">{{ item.cashback_percentage_text }}</p>
+                    </div>
+                    <div class="cart-item-summary">
+                        <p class="cart-item-spent"><strong>Потрачено:</strong> {{ item.spent }} руб.</p>
+                        <p class="cart-item-cashback"><strong>Получено кешбэка:</strong> {{ item.cashback_received }} руб.</p>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>Корзина пуста для выбранного месяца.</p>
+        {% endif %}
+    </div>
+
+    <!-- Форма для удаления заявки -->
+    <form action="{% url 'delete_cashback_order' report_id=data.current_order_id %}" method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn-delete">Удалить заявку</button>
+    </form>
+{% endblock %}
+
+ {% endcomment %}
