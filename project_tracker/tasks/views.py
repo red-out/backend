@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from datetime import date
 from .models import CashbackService, CashbackOrder, CashbackOrderService
@@ -12,18 +12,17 @@ def all_cashback_services(request):
     # Получаем активную заявку (черновик или завершённую)
     active_order = CashbackOrder.objects.filter(creator=request.user).order_by('-id').first()
     
-    # Если текущая заявка завершена или удалена, создаем новую
+    # Если текущая заявка завершена или удалена, не показываем её
     if active_order and active_order.status in ['completed', 'deleted']:
-        new_order = CashbackOrder.objects.create(creator=request.user, status='draft', month=date.today().strftime("%B"))
-        
-        # Добавляем случайную услугу в новую заявку
-        random_service = random.choice(CashbackService.objects.filter(status='active'))
-        CashbackOrderService.objects.create(
-            order=new_order,
-            service=random_service,
-            total_spent=77777  # Устанавливаем потраченную сумму
+        active_order = None  # Сбрасываем активную заявку
+
+    # Если активной заявки нет, создаем новую
+    if not active_order:
+        active_order = CashbackOrder.objects.create(
+            creator=request.user,
+            status='draft',
+            month=date.today().strftime("%B")
         )
-        active_order = new_order  # Обновляем ссылку на активный заказ
 
     # Количество карточек в текущей заявке
     transaction_count = CashbackOrderService.objects.filter(order=active_order).count() if active_order else 0
@@ -47,6 +46,7 @@ def all_cashback_services(request):
         }
     })
 
+
 def cashback_details(request, id):
     service = get_object_or_404(CashbackService, id=id)
 
@@ -62,20 +62,45 @@ def cashback_details(request, id):
             status='draft',
             month=date.today().strftime("%B")  # Пример месяца
         )
-        # Добавляем случайную услугу в новый черновик
-        random_service = random.choice(CashbackService.objects.filter(status='active'))
-        CashbackOrderService.objects.create(
-            order=order,
-            service=random_service,
-            total_spent=77777  # Устанавливаем потраченную сумму
-        )
 
     return render(request, 'cashback_details.html', {'data': service})
 
-def monthly_cashbacks_view(request, report_id):
-    transactions_with_titles = []
-    selected_report = get_object_or_404(CashbackOrder, id=report_id, creator=request.user, status__in=['draft', 'active', 'completed'])
 
+def add_cashback(request, id):
+    if request.method == 'POST':
+        # Получаем активную заявку (черновик)
+        active_order = CashbackOrder.objects.filter(creator=request.user, status='draft').first()
+        
+        if not active_order:
+            return HttpResponseRedirect(reverse('home'))  # Не добавляем кешбэк, если активной заявки нет
+
+        # Получаем кешбэк по ID
+        cashback_service = get_object_or_404(CashbackService, id=id)
+
+        # Проверяем, существует ли уже услуга в текущем заказе
+        if CashbackOrderService.objects.filter(order=active_order, service=cashback_service).exists():
+            return HttpResponseRedirect(reverse('home'))  # Возвращаем редирект, если кешбэк уже добавлен
+
+        # Добавляем кешбэк в заявку
+        CashbackOrderService.objects.create(
+            order=active_order,
+            service=cashback_service,
+            total_spent=77777  # Здесь можно установить реальную сумму, если она известна
+        )
+
+    return HttpResponseRedirect(reverse('home'))
+
+
+def monthly_cashbacks_view(request, report_id):
+    # Пытаемся получить заявку по ID
+    selected_report = get_object_or_404(CashbackOrder, id=report_id, creator=request.user)
+
+    # Проверяем статус заявки
+    if selected_report.status == 'deleted':
+        return HttpResponse("Кешбэки за этот месяц были удалены")  # Возвращаем сообщение, если заявка удалена
+
+    transactions_with_titles = []
+    
     for transaction in CashbackOrderService.objects.filter(order=selected_report):
         cashback_received = extract_cashback_percentage(transaction.service.cashback_percentage_text) * transaction.total_spent
         
@@ -101,6 +126,7 @@ def monthly_cashbacks_view(request, report_id):
         }
     })
 
+
 def delete_cashback_order(request, report_id):
     if request.method == 'POST':
         # Удаляем заявку и её услуги
@@ -110,18 +136,8 @@ def delete_cashback_order(request, report_id):
         # Удаляем все услуги, связанные с данной заявкой
         CashbackOrderService.objects.filter(order_id=report_id).delete()
 
-        # Создаем новый черновик после удаления
-        new_order = CashbackOrder.objects.create(creator=request.user, status='draft', month=date.today().strftime("%B"))
-        
-        # Добавляем случайную услугу в новую заявку
-        random_service = random.choice(CashbackService.objects.filter(status='active'))
-        CashbackOrderService.objects.create(
-            order=new_order,
-            service=random_service,
-            total_spent=77777  # Устанавливаем потраченную сумму
-        )
-
         return HttpResponseRedirect(reverse('home'))   # Перенаправление на главную страницу
+
 
 def extract_cashback_percentage(cashback_percentage_text):
     match = re.search(r'(\d+)%', cashback_percentage_text)

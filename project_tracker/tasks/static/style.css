@@ -63,6 +63,7 @@ p {
     flex-wrap: wrap; /* Позволяет карточкам переноситься на следующую строку при необходимости */
     justify-content: space-around; /* Размещает карточки с равными промежутками */
     padding: 20px;
+    justify-content: flex-start; 
 }
 
 
@@ -75,14 +76,13 @@ p {
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     text-align: center;
-    position: relative;
     margin: 10px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
+    position: relative; /* Убедитесь, что позиционирование работает */
 }
-
 
 /* Стили для контейнера изображения карточки */
 .card-image-container {
@@ -116,13 +116,18 @@ p {
 
 /* Полная кликабельность карточки */
 .card a {
-    position: absolute;
-    top: 0;
-    left: 0;
+    position: relative; /* Измените на relative */
     width: 100%;
     height: 100%;
-    z-index: 1;
+    z-index: 0; /* Задать z-index для ссылки */
     text-decoration: none;
+}
+
+/* Стили для кнопки внутри карточки */
+.card .add-to-cashback-button {
+    position: relative; 
+    z-index: 1; /* Увеличиваем z-index кнопки, чтобы она была выше ссылки */
+    margin-top: auto; /* Позволяет кнопке оставаться внизу карточки */
 }
 
 
@@ -346,3 +351,43 @@ form button:hover {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Стили для кнопки внутри карточки */
+.add-to-cashback-button {
+    padding: 12px 20px; /* Подобно кнопке корзины */
+    background-color: #ffeb3b; /* Цвет кнопки */
+    color: #000; /* Черный текст */
+    border: 1px solid #ffeb3b; /* Соответствует кнопке корзины */
+    border-radius: 4px; /* Скругленные углы */
+    cursor: pointer;
+    text-align: center;
+    margin-top: 10px; /* Отступ сверху, чтобы кнопка не прилипала к содержимому */
+    font-size: 16px; /* Размер шрифта */
+    transition: background-color 0.3s ease; /* Эффект перехода */
+}
+
+.add-to-cashback-button:hover {
+    background-color: #fdd835; /* Цвет при наведении */
+    border-color: #fdd835; /* Цвет границы при наведении */
+}
