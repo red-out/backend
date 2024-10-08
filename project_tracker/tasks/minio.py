@@ -12,10 +12,10 @@ def process_file_upload(file_object: InMemoryUploadedFile, client, image_name):
 
 def add_pic(new_stock, pic):
     client = Minio(           
-            endpoint=settings.AWS_S3_ENDPOINT_URL,
-            access_key=settings.AWS_ACCESS_KEY_ID,
-            secret_key=settings.AWS_SECRET_ACCESS_KEY,
-            secure=settings.MINIO_USE_SSL
+        endpoint=settings.AWS_S3_ENDPOINT_URL,
+        access_key=settings.AWS_ACCESS_KEY_ID,
+        secret_key=settings.AWS_SECRET_ACCESS_KEY,
+        secure=settings.MINIO_USE_SSL
     )
     i = new_stock.id
     img_obj_name = f"{i}.png"
@@ -32,3 +32,17 @@ def add_pic(new_stock, pic):
     new_stock.save()
 
     return Response({"message": "success"})
+
+def delete_pic(image_name):
+    client = Minio(           
+        endpoint=settings.AWS_S3_ENDPOINT_URL,
+        access_key=settings.AWS_ACCESS_KEY_ID,
+        secret_key=settings.AWS_SECRET_ACCESS_KEY,
+        secure=settings.MINIO_USE_SSL
+    )
+    
+    try:
+        client.remove_object('web', image_name)  # Удаляем объект из бакета 'web'
+        return {"message": "Image deleted successfully"}
+    except Exception as e:
+        return {"error": str(e)}
