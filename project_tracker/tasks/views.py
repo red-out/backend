@@ -12,6 +12,7 @@ from .singleton import UserSingleton
 from datetime import datetime
 from django.utils import timezone
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from .models import AuthUser  # Убедитесь, что путь правильный
 
 
 def get_creator():
@@ -89,13 +90,24 @@ class CashbackServiceDetail(APIView):
         service.save()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
-
+   
     @api_view(['POST'])
     def add_to_draft_order(request, id):
         service = get_object_or_404(CashbackService, id=id)
-        order = CashbackOrder.objects.create(creator=get_creator(), status='draft')  # Создаем заказ с фиксированным создателем
-        CashbackOrderService.objects.create(order=order, service=service)
-        return Response({'order_id': order.id}, status=status.HTTP_201_CREATED)
+        creator = get_creator()  # Получаем создателя через функцию-синглтон
+
+    # Пытаемся найти последний черновик, созданный данным пользователем
+        draft_order = CashbackOrder.objects.filter(creator=creator, status='draft').last()
+
+    # Если черновик не найден, создаем новый
+        if draft_order is None:
+            draft_order = CashbackOrder.objects.create(creator=creator, status='draft')
+
+    # Добавляем услугу в черновик (существующий или новый)
+        CashbackOrderService.objects.create(order=draft_order, service=service)
+
+    # Возвращаем ID черновика
+        return Response({'order_id': draft_order.id}, status=status.HTTP_201_CREATED)
 
     @api_view(['POST'])
     def add_image(request, id):
@@ -130,7 +142,10 @@ class CashbackOrderList(APIView):
                 return Response({'error': 'Invalid end date format'}, status=status.HTTP_400_BAD_REQUEST)
 
         if status_filter:
-            orders = orders.filter(status=status_filter)
+            orders = orders.filter(status=status_filter)        # Фильтрация по статусу, если передан
+       
+        # Сортировка по статусу
+        orders = orders.order_by('status')
 
         serializer = CashbackOrderSerializer(orders.select_related('creator', 'moderator'), many=True)
         return Response(serializer.data)
@@ -156,18 +171,16 @@ class CashbackOrderDetail(APIView):
     @api_view(['PUT'])
     def create_order(request, id):
         order = get_object_or_404(CashbackOrder, id=id, status='draft')
-        month = request.data.get('month')
-        total_spent_month = request.data.get('total_spent_month')
 
-        if month is None or total_spent_month is None:
-            return Response({'error': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
+    # Проверяем, заполнено ли поле "месяц" в заказе
+        if not order.month:
+            return Response({'error': 'Поле "месяц" должно быть заполнено.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Логика для обновления заказа
-        order.month = month
-        order.total_spent_month = total_spent_month
+    # Логика для обновления заказа
         order.status = 'formed'
         order.formation_date = timezone.now()  # Устанавливаем дату формирования
         order.save()
+
         return Response(status=status.HTTP_200_OK)
 
     @api_view(['PUT'])
@@ -215,39 +228,53 @@ class CashbackOrderServiceList(APIView):
         return Response({'error': 'Total_spent is required'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+
 class UserRegistration(APIView):
     def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            return Response({'id': user.id, 'username': user.username}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        username = request.data.get('username')
+        password = request.data.get('password')
+        email = request.data.get('email')
+        first_name = request.data.get('first_name')
+        last_name = request.data.get('last_name')
+
+        user = AuthUser(
+            username=username,
+            password=password,  # Сохраняем пароль как есть (не рекомендуется в продакшене)
+            email=email,
+            first_name=first_name,
+            last_name=last_name
+        )
+        user.save()
+        return Response({'id': user.id, 'username': user.username}, status=status.HTTP_201_CREATED)
 
 
 class UserProfile(APIView):
     def put(self, request):
         user = get_creator()  # Получаем фиксированного создателя
-        serializer = UserSerializer(user, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'id': user.id, 'username': user.username}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Обновляем поля пользователя
+        for attr, value in request.data.items():
+            setattr(user, attr, value)
+        user.save()
+        return Response({'id': user.id, 'username': user.username}, status=status.HTTP_200_OK)
 
 
 class UserLogin(APIView):
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
-        user = authenticate(username=username, password=password)
-
-        if user is not None:
-            auth_login(request, user)
-            return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
-        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+        try:
+            user = AuthUser.objects.get(username=username)
+            if user.password == password:  # Проверяем пароль напрямую
+                auth_login(request, user)  # Устанавливаем сессию
+                return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        except AuthUser.DoesNotExist:
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
 class UserLogout(APIView):
     def post(self, request):
-        auth_logout(request)
+        auth_logout(request)  # Завершаем сессию
         return Response({'message': 'Logout successful'}, status=status.HTTP_200_OK)
-

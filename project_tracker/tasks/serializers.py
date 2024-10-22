@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import CashbackService, CashbackOrder, CashbackOrderService
 from django.contrib.auth.models import User
+from rest_framework import serializers
+from .models import AuthUser
 
 class CashbackServiceSerializer(serializers.ModelSerializer):
     # Делаем поле image_url необязательным
@@ -32,6 +34,17 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AuthUser
+        fields = ['id', 'username', 'password', 'email', 'first_name', 'last_name']
+
+    def create(self, validated_data):
+        # Хешируем пароль перед сохранением
+        validated_data['password'] = make_password(validated_data['password'])
+        user = AuthUser(**validated_data)
+        user.save()
+        return user
 # from rest_framework import serializers
 # from .models import CashbackService, CashbackOrder, CashbackOrderService
 # from django.contrib.auth.models import User

@@ -34,14 +34,14 @@ urlpatterns = [
     path('cashback_orders/<int:id>/delete/', CashbackOrderDetail.as_view(), name='cashback_order_delete'),
 
     # Домен услуг в заявке
-    path('cashback_orders/<int:order_id>/services/<int:service_id>/delete/', CashbackOrderServiceList.as_view(), name='order_service_delete'),
-    path('cashback_orders/<int:order_id>/services/<int:service_id>/update/', CashbackOrderServiceList.as_view(), name='order_service_update'),
+    path('cashbacks_orders/<int:order_id>/services/<int:service_id>/delete/', CashbackOrderServiceList.as_view(), name='order_service_delete'),
+    path('cashbacks_orders/<int:order_id>/services/<int:service_id>/update/', CashbackOrderServiceList.as_view(), name='order_service_update'),
 
     # Домен пользователь
-    path('register/', UserRegistration.as_view(), name='user_registration'),
-    path('profile/update/', UserProfile.put, name='user_profile_update'),
-    path('login/', UserLogin.as_view(), name='login'),  # Обновлено на класс
-    path('logout/', UserLogout.as_view(), name='logout'),  # Обновлено на класс
+    path('auth/register/', UserRegistration.as_view(), name='user_registration'),
+    path('auth/profile/update/', UserProfile.as_view(), name='user_profile_update'),
+    path('auth/login/', UserLogin.as_view(), name='login'),  # Обновлено на класс
+    path('auth/logout/', UserLogout.as_view(), name='logout'),  # Обновлено на класс
 ]
 
 # from django.contrib import admin
