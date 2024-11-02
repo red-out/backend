@@ -70,7 +70,6 @@ class AuthUser(models.Model):
     is_active = models.BooleanField(default=True)
     date_joined = models.DateTimeField(auto_now=True)
     first_name = models.CharField(max_length=150)
-    # is_creator = models.BooleanField(default=False)
     # is_moderator = models.BooleanField(default=False)
 
     def __str__(self):

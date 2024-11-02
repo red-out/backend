@@ -142,7 +142,7 @@ class CashbackOrderList(APIView):
                 return Response({'error': 'Invalid end date format'}, status=status.HTTP_400_BAD_REQUEST)
 
         if status_filter:
-            orders = orders.filter(status=status_filter)        # Фильтрация по статусу, если передан
+            orders = orders.filter(status=status_filter)        # Фильтрация по статусу
        
         # Сортировка по статусу
         orders = orders.order_by('status')
@@ -194,11 +194,11 @@ class CashbackOrderDetail(APIView):
             order.status = 'completed'
             order.completion_date = timezone.now()  # Устанавливаем дату завершения
             order.moderator = get_creator()  # Устанавливаем модератора
-            # Здесь можно добавить расчеты, например, total_cost, delivery_date
-            order.calculate_total_spent()  # Если у вас есть метод для вычисления стоимости
+            
+            order.calculate_total_spent()  
         else:  # reject
             order.status = 'rejected'
-            order.moderator = get_creator()  # Устанавливаем модератора
+            order.moderator = get_creator()  
             order.completion_date = timezone.now()  # Устанавливаем дату завершения
 
         order.save()
@@ -239,7 +239,7 @@ class UserRegistration(APIView):
 
         user = AuthUser(
             username=username,
-            password=password,  # Сохраняем пароль как есть (не рекомендуется в продакшене)
+            password=password,  
             email=email,
             first_name=first_name,
             last_name=last_name
@@ -266,7 +266,7 @@ class UserLogin(APIView):
         try:
             user = AuthUser.objects.get(username=username)
             if user.password == password:  # Проверяем пароль напрямую
-                auth_login(request, user)  # Устанавливаем сессию
+                auth_login(request, user)  
                 return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
             else:
                 return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
