@@ -3,6 +3,7 @@ from .models import CashbackService, CashbackOrder, CashbackOrderService
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from .models import AuthUser
+from collections import OrderedDict
 
 class CashbackServiceSerializer(serializers.ModelSerializer):
     # Делаем поле image_url необязательным
@@ -12,12 +13,26 @@ class CashbackServiceSerializer(serializers.ModelSerializer):
         model = CashbackService
         fields = '__all__'
 
+    def get_fields(self):
+        new_fields = OrderedDict()
+        for name, field in super().get_fields().items():
+            field.required = False
+            new_fields[name] = field
+        return new_fields
+    
 class CashbackOrderSerializer(serializers.ModelSerializer):
     services = CashbackServiceSerializer(many=True, read_only=True)
 
     class Meta:
         model = CashbackOrder
         fields = '__all__'
+
+    def get_fields(self):
+        new_fields = OrderedDict()
+        for name, field in super().get_fields().items():
+            field.required = False
+            new_fields[name] = field
+        return new_fields
 
 class UserSerializer(serializers.ModelSerializer):
     # Переопределяем поле password, чтобы оно не было видно в ответе
@@ -45,30 +60,19 @@ class UserSerializer(serializers.ModelSerializer):
         user = AuthUser(**validated_data)
         user.save()
         return user
-# from rest_framework import serializers
-# from .models import CashbackService, CashbackOrder, CashbackOrderService
-# from django.contrib.auth.models import User
 
-# class CashbackServiceSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = CashbackService
-#         fields = '__all__'
-
-# class CashbackOrderSerializer(serializers.ModelSerializer):
-#     services = CashbackServiceSerializer(many=True, read_only=True)
-
-#     class Meta:
-#         model = CashbackOrder
-#         fields = '__all__'
-
-# class UserSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = User
-#         fields = ['username', 'password']
-
-#     def create(self, validated_data):
-#         user = User(**validated_data)
-#         user.set_password(validated_data['password'])
-#         user.save()
-#         return user
+    def get_fields(self):
+        new_fields = OrderedDict()
+        for name, field in super().get_fields().items():
+            field.required = False
+            new_fields[name] = field
+        return new_fields
+# только для сваггера
+class CompleteOrRejectOrderSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=['complete', 'reject'])
+# только для сваггера
+class CashbackOrderServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CashbackOrderService
+        fields = ['total_spent']  
 

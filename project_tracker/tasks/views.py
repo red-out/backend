@@ -6,13 +6,14 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework.decorators import api_view
 from .models import CashbackService, CashbackOrder, CashbackOrderService
-from .serializers import CashbackServiceSerializer, CashbackOrderSerializer, UserSerializer
+from .serializers import  CashbackOrderServiceSerializer, CompleteOrRejectOrderSerializer, CashbackServiceSerializer, CashbackOrderSerializer, UserSerializer
 from .minio import add_pic, delete_pic
 from .singleton import UserSingleton
 from datetime import datetime
 from django.utils import timezone
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
-from .models import AuthUser  # Убедитесь, что путь правильный
+from .models import AuthUser  
+from drf_yasg.utils import swagger_auto_schema
 
 
 def get_creator():
@@ -48,7 +49,8 @@ class CashbackServiceList(APIView):
         })
 
         return Response(response_data)
-
+    
+    @swagger_auto_schema(request_body=CashbackServiceSerializer)
     def post(self, request):
         serializer = CashbackServiceSerializer(data=request.data)
         if serializer.is_valid():
@@ -62,7 +64,8 @@ class CashbackServiceDetail(APIView):
         service = get_object_or_404(CashbackService, id=id)
         serializer = CashbackServiceSerializer(service)
         return Response(serializer.data)
-
+    
+    @swagger_auto_schema(request_body=CashbackServiceSerializer)
     def put(self, request, id):
         service = get_object_or_404(CashbackService, id=id)
         serializer = CashbackServiceSerializer(service, data=request.data, partial=True)
@@ -90,7 +93,8 @@ class CashbackServiceDetail(APIView):
         service.save()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
-   
+    
+    @swagger_auto_schema(method='post')
     @api_view(['POST'])
     def add_to_draft_order(request, id):
         service = get_object_or_404(CashbackService, id=id)
@@ -108,7 +112,8 @@ class CashbackServiceDetail(APIView):
 
     # Возвращаем ID черновика
         return Response({'order_id': draft_order.id}, status=status.HTTP_201_CREATED)
-
+    
+    @swagger_auto_schema(method='post')
     @api_view(['POST'])
     def add_image(request, id):
         service = get_object_or_404(CashbackService, id=id)
@@ -158,7 +163,8 @@ class CashbackOrderDetail(APIView):
         order_data = CashbackOrderSerializer(order).data
         order_data['services'] = [{'service_id': service.service.id, 'category': service.service.category, 'image_url': service.service.image_url, 'total_spent': service.total_spent} for service in services]
         return Response(order_data)
-
+    
+    @swagger_auto_schema(request_body=CashbackOrderSerializer)
     def put(self, request, id):
         print(f"Received ID: {id}")
         order = get_object_or_404(CashbackOrder, id=id)
@@ -167,7 +173,8 @@ class CashbackOrderDetail(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
+    @swagger_auto_schema(method='put')
     @api_view(['PUT'])
     def create_order(request, id):
         order = get_object_or_404(CashbackOrder, id=id, status='draft')
@@ -182,19 +189,22 @@ class CashbackOrderDetail(APIView):
         order.save()
 
         return Response(status=status.HTTP_200_OK)
-
+    @swagger_auto_schema(method='put', request_body=CompleteOrRejectOrderSerializer)
     @api_view(['PUT'])
     def complete_or_reject_order(request, id):
         order = get_object_or_404(CashbackOrder, id=id)
-        action = request.data.get('action')
-        if action not in ['complete', 'reject']:
-            return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
-
+        serializer = CompleteOrRejectOrderSerializer(data=request.data)
+    
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+        action = serializer.validated_data['action']
+    
         if action == 'complete':
             order.status = 'completed'
             order.completion_date = timezone.now()  # Устанавливаем дату завершения
             order.moderator = get_creator()  # Устанавливаем модератора
-            
+        
             order.calculate_total_spent()  
         else:  # reject
             order.status = 'rejected'
@@ -203,6 +213,28 @@ class CashbackOrderDetail(APIView):
 
         order.save()
         return Response(status=status.HTTP_200_OK)
+
+    # @swagger_auto_schema(method='put', request_body={'type': 'object', 'properties': {'action': {'type': 'string', 'enum': ['complete', 'reject']}}})
+    # @api_view(['PUT'])
+    # def complete_or_reject_order(request, id):
+    #     order = get_object_or_404(CashbackOrder, id=id)
+    #     action = request.data.get('action')
+    #     if action not in ['complete', 'reject']:
+    #         return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+
+    #     if action == 'complete':
+    #         order.status = 'completed'
+    #         order.completion_date = timezone.now()  # Устанавливаем дату завершения
+    #         order.moderator = get_creator()  # Устанавливаем модератора
+            
+    #         order.calculate_total_spent()  
+    #     else:  # reject
+    #         order.status = 'rejected'
+    #         order.moderator = get_creator()  
+    #         order.completion_date = timezone.now()  # Устанавливаем дату завершения
+
+    #     order.save()
+    #     return Response(status=status.HTTP_200_OK)
 
     def delete(self, request, id):
         order = get_object_or_404(CashbackOrder, id=id)
@@ -218,18 +250,32 @@ class CashbackOrderServiceList(APIView):
         order_service.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @swagger_auto_schema(request_body=CashbackOrderServiceSerializer)
     def put(self, request, order_id, service_id):
         order_service = get_object_or_404(CashbackOrderService, order_id=order_id, service_id=service_id)
-        total_spent = request.data.get('total_spent')
-        if total_spent is not None:
-            order_service.total_spent = total_spent
+        serializer = CashbackOrderServiceSerializer(data=request.data)
+
+        if serializer.is_valid():
+            order_service.total_spent = serializer.validated_data['total_spent']
             order_service.save()
             return Response(status=status.HTTP_200_OK)
-        return Response({'error': 'Total_spent is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    # @swagger_auto_schema(request_body=CashbackOrderService)
+    # def put(self, request, order_id, service_id):
+    #     order_service = get_object_or_404(CashbackOrderService, order_id=order_id, service_id=service_id)
+    #     total_spent = request.data.get('total_spent')
+    #     if total_spent is not None:
+    #         order_service.total_spent = total_spent
+    #         order_service.save()
+    #         return Response(status=status.HTTP_200_OK)
+    #     return Response({'error': 'Total_spent is required'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
 class UserRegistration(APIView):
+ #   @swagger_auto_schema(request_body=AuthUser)
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
@@ -248,7 +294,51 @@ class UserRegistration(APIView):
         return Response({'id': user.id, 'username': user.username}, status=status.HTTP_201_CREATED)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ПОКА БЕЗ АВТОРИЗАЦИИ В СВАГГЕРЕ
 class UserProfile(APIView):
+  #  @swagger_auto_schema(request_body=AuthUser)
     def put(self, request):
         user = get_creator()  # Получаем фиксированного создателя
         # Обновляем поля пользователя
@@ -259,6 +349,7 @@ class UserProfile(APIView):
 
 
 class UserLogin(APIView):
+  #  @swagger_auto_schema(request_body={'type': 'object', 'properties': {'username': {'type': 'string'}, 'password': {'type': 'string'}}})
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
@@ -275,6 +366,7 @@ class UserLogin(APIView):
 
 
 class UserLogout(APIView):
+   # @swagger_auto_schema(responses={200: {'description': 'Logout successful'}})
     def post(self, request):
         auth_logout(request)  # Завершаем сессию
         return Response({'message': 'Logout successful'}, status=status.HTTP_200_OK)
