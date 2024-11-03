@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from .models import AuthUser
 from collections import OrderedDict
+from tasks.models import CustomUser
 
 class CashbackServiceSerializer(serializers.ModelSerializer):
     # Делаем поле image_url необязательным
@@ -75,4 +76,10 @@ class CashbackOrderServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = CashbackOrderService
         fields = ['total_spent']  
-
+#для авторизации
+class UserSerializer(serializers.ModelSerializer):
+    is_staff = serializers.BooleanField(default=False, required=False)
+    is_superuser = serializers.BooleanField(default=False, required=False)
+    class Meta:
+        model = CustomUser
+        fields = ['email', 'password', 'is_staff', 'is_superuser']

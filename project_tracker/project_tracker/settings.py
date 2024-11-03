@@ -53,6 +53,19 @@ MIDDLEWARE = [
     'tasks.middleware.DisableCSRF',
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ]
+}
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ]
+}
+AUTH_USER_MODEL = 'tasks.CustomUser'
+
 ROOT_URLCONF = 'project_tracker.urls'
 
 TEMPLATES = [

@@ -1,19 +1,29 @@
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework import status
-from django.shortcuts import get_object_or_404
-from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
-from rest_framework.decorators import api_view
-from .models import CashbackService, CashbackOrder, CashbackOrderService
-from .serializers import  CashbackOrderServiceSerializer, CompleteOrRejectOrderSerializer, CashbackServiceSerializer, CashbackOrderSerializer, UserSerializer
-from .minio import add_pic, delete_pic
-from .singleton import UserSingleton
 from datetime import datetime
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponse
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
-from .models import AuthUser  
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import authenticate, login, logout
+from rest_framework import status, viewsets
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.permissions import AllowAny
+from tasks.permissions import IsAdmin, IsManager
 from drf_yasg.utils import swagger_auto_schema
+
+from .models import CashbackService, CashbackOrder, CashbackOrderService, AuthUser, CustomUser
+from .serializers import (
+    CashbackOrderServiceSerializer, 
+    CompleteOrRejectOrderSerializer, 
+    CashbackServiceSerializer, 
+    CashbackOrderSerializer, 
+    UserSerializer
+)
+from .minio import add_pic, delete_pic
+from .singleton import UserSingleton
+
 
 
 def get_creator():
@@ -214,28 +224,6 @@ class CashbackOrderDetail(APIView):
         order.save()
         return Response(status=status.HTTP_200_OK)
 
-    # @swagger_auto_schema(method='put', request_body={'type': 'object', 'properties': {'action': {'type': 'string', 'enum': ['complete', 'reject']}}})
-    # @api_view(['PUT'])
-    # def complete_or_reject_order(request, id):
-    #     order = get_object_or_404(CashbackOrder, id=id)
-    #     action = request.data.get('action')
-    #     if action not in ['complete', 'reject']:
-    #         return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
-
-    #     if action == 'complete':
-    #         order.status = 'completed'
-    #         order.completion_date = timezone.now()  # Устанавливаем дату завершения
-    #         order.moderator = get_creator()  # Устанавливаем модератора
-            
-    #         order.calculate_total_spent()  
-    #     else:  # reject
-    #         order.status = 'rejected'
-    #         order.moderator = get_creator()  
-    #         order.completion_date = timezone.now()  # Устанавливаем дату завершения
-
-    #     order.save()
-    #     return Response(status=status.HTTP_200_OK)
-
     def delete(self, request, id):
         order = get_object_or_404(CashbackOrder, id=id)
         order.formation_date = timezone.now()  # Устанавливаем дату формирования
@@ -262,36 +250,85 @@ class CashbackOrderServiceList(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    # @swagger_auto_schema(request_body=CashbackOrderService)
-    # def put(self, request, order_id, service_id):
-    #     order_service = get_object_or_404(CashbackOrderService, order_id=order_id, service_id=service_id)
-    #     total_spent = request.data.get('total_spent')
-    #     if total_spent is not None:
-    #         order_service.total_spent = total_spent
-    #         order_service.save()
-    #         return Response(status=status.HTTP_200_OK)
-    #     return Response({'error': 'Total_spent is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ЛАБА 4
+
+class UserViewSet(viewsets.ModelViewSet):
+    """Класс, описывающий методы работы с пользователями
+    Осуществляет связь с таблицей пользователей в базе данных
+    """
+    queryset = CustomUser.objects.all()
+    serializer_class = UserSerializer
+    model_class = CustomUser
+
+    def get_permissions(self):
+        if self.action in ['create']:
+            permission_classes = [AllowAny]
+        elif self.action in ['list']:
+            permission_classes = [IsAdmin | IsManager]
+        else:
+            permission_classes = [IsAdmin]
+        return [permission() for permission in permission_classes]
+
+    def create(self, request):
+        """
+        Функция регистрации новых пользователей
+        Если пользователя c указанным в request email ещё нет, в БД будет добавлен новый пользователь.
+        """
+        if self.model_class.objects.filter(email=request.data['email']).exists():
+            return Response({'status': 'Exist'}, status=400)
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            print(serializer.data)
+            self.model_class.objects.create_user(email=serializer.data['email'],
+                                     password=serializer.data['password'],
+                                     is_superuser=serializer.data['is_superuser'],
+                                     is_staff=serializer.data['is_staff'])
+            return Response({'status': 'Success'}, status=200)
+        return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+def method_permission_classes(classes):
+    def decorator(func):
+        def decorated_func(self, *args, **kwargs):
+            self.permission_classes = classes        
+            self.check_permissions(self.request)
+            return func(self, *args, **kwargs)
+        return decorated_func
+    return decorator
+
+
+@permission_classes([AllowAny])
+@authentication_classes([])
+@csrf_exempt
+@swagger_auto_schema(method='post', request_body=UserSerializer)
+@api_view(['Post'])
+def login_view(request):
+    email = request.data["email"] # допустим передали username и password
+    password = request.data["password"]
+    user = authenticate(request, email=email, password=password)
+    if user is not None:
+        login(request, user)
+        return HttpResponse("{'status': 'ok'}")
+    else:
+        return HttpResponse("{'status': 'error', 'error': 'login failed'}")
+
+def logout_view(request):
+    logout(request._request)
+    return Response({'status': 'Success'})
+
+# ЛАБА 4 КОНЕЦ
 
 
 
-class UserRegistration(APIView):
- #   @swagger_auto_schema(request_body=AuthUser)
-    def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        email = request.data.get('email')
-        first_name = request.data.get('first_name')
-        last_name = request.data.get('last_name')
 
-        user = AuthUser(
-            username=username,
-            password=password,  
-            email=email,
-            first_name=first_name,
-            last_name=last_name
-        )
-        user.save()
-        return Response({'id': user.id, 'username': user.username}, status=status.HTTP_201_CREATED)
+
+
+
+
+
+
+
 
 
 
@@ -337,6 +374,27 @@ class UserRegistration(APIView):
 
 
 # ПОКА БЕЗ АВТОРИЗАЦИИ В СВАГГЕРЕ
+
+class UserRegistration(APIView):
+ #   @swagger_auto_schema(request_body=AuthUser)
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        email = request.data.get('email')
+        first_name = request.data.get('first_name')
+        last_name = request.data.get('last_name')
+
+        user = AuthUser(
+            username=username,
+            password=password,  
+            email=email,
+            first_name=first_name,
+            last_name=last_name
+        )
+        user.save()
+        return Response({'id': user.id, 'username': user.username}, status=status.HTTP_201_CREATED)
+
+
 class UserProfile(APIView):
   #  @swagger_auto_schema(request_body=AuthUser)
     def put(self, request):
