@@ -10,13 +10,10 @@ from tasks.views import (
     CashbackOrderList,
     CashbackOrderDetail,
     CashbackOrderServiceList,
-    UserRegistration, #(3 laba)
-    UserProfile, #(3 laba)
-    UserLogin,  # Изменено на класс для аутентификации (3 laba)
-    UserLogout,  # Изменено на класс для деавторизации (3 laba)
     UserViewSet, # 4(laba)
     login_view,
     logout_view,
+    partial_update,
 )
 schema_view = get_schema_view(
    openapi.Info(
@@ -36,12 +33,13 @@ router.register(r'user', UserViewSet, basename='user')
 # router.register(r'user', views.UserViewSet, basename='user')
 
 urlpatterns = [
-    #swagger (4 laba)
+    #swagger 
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     #registration (4 laba)
     path('api/', include(router.urls)),
     path('login/',  login_view, name='login'),
     path('logout/', logout_view, name='logout'),
+    path('user/<int:pk>/update/', partial_update, name='user_update'),
     # Админка
     path('admin/', admin.site.urls),
 
@@ -66,10 +64,6 @@ urlpatterns = [
     path('cashbacks_orders/<int:order_id>/services/<int:service_id>/delete/', CashbackOrderServiceList.as_view(), name='order_service_delete'),
     path('cashbacks_orders/<int:order_id>/services/<int:service_id>/update/', CashbackOrderServiceList.as_view(), name='order_service_update'),
 
-    # Домен пользователь
-    path('auth/register/', UserRegistration.as_view(), name='user_registration'),
-    path('auth/profile/update/', UserProfile.as_view(), name='user_profile_update'),
-    path('auth/login/', UserLogin.as_view(), name='login'),  # Обновлено на класс
-    path('auth/logout/', UserLogout.as_view(), name='logout'),  # Обновлено на класс
+
 ]
 

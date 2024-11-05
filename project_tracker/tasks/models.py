@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.conf import settings
-
+from rest_framework import serializers
 class CashbackService(models.Model):
     STATUS_CHOICES = [
         ('active', 'Активный'),

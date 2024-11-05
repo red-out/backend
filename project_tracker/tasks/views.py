@@ -1,4 +1,10 @@
 from datetime import datetime
+from django.db import IntegrityError  
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
+import logging
+from django.db import connection
+from rest_framework.decorators import action
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
@@ -12,7 +18,9 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 from rest_framework.permissions import AllowAny
 from tasks.permissions import IsAdmin, IsManager
 from drf_yasg.utils import swagger_auto_schema
-
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
 from .models import CashbackService, CashbackOrder, CashbackOrderService, AuthUser, CustomUser
 from .serializers import (
     CashbackOrderServiceSerializer, 
@@ -23,15 +31,129 @@ from .serializers import (
 )
 from .minio import add_pic, delete_pic
 from .singleton import UserSingleton
+import redis
+import uuid
+from django.http import HttpResponse, JsonResponse
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
 
 
+
+# Connect to our Redis instance
+session_storage = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT)
 
 def get_creator():
     return UserSingleton.get_instance().get_user()  # Получаем фиксированного пользователя
 
+# ЛАБА 4
+
+class UserViewSet(viewsets.ModelViewSet):
+    """Класс, описывающий методы работы с пользователями
+    Осуществляет связь с таблицей пользователей в базе данных
+    """
+    queryset = CustomUser.objects.all()
+    serializer_class = UserSerializer
+    model_class = CustomUser
+
+    def get_permissions(self):
+        if self.action in ['create']:
+            permission_classes = [AllowAny]
+        elif self.action in ['list']:
+            permission_classes = [IsAdmin | IsManager]
+        else:
+            permission_classes = [IsAdmin]
+        return [permission() for permission in permission_classes]
+
+    def create(self, request):
+        """
+        Функция регистрации новых пользователей
+        Если пользователя c указанным в request email ещё нет, в БД будет добавлен новый пользователь.
+        """
+        if self.model_class.objects.filter(email=request.data['email']).exists():
+            return Response({'status': 'Exist'}, status=400)
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            print(serializer.data)
+            self.model_class.objects.create_user(email=serializer.data['email'],
+                                     password=serializer.data['password'],
+                                     is_superuser=serializer.data['is_superuser'],
+                                     is_staff=serializer.data['is_staff'])
+            return Response({'status': 'Success'}, status=200)
+        return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+def method_permission_classes(classes):
+    def decorator(func):
+        def decorated_func(self, *args, **kwargs):
+            self.permission_classes = classes        
+            self.check_permissions(self.request)
+            return func(self, *args, **kwargs)
+        return decorated_func
+    return decorator
+
+@swagger_auto_schema(method='patch', request_body=UserSerializer)
+@api_view(['PATCH'])
+@permission_classes([AllowAny])
+def partial_update(request, pk=None):
+    """
+    Метод для частичного обновления данных пользователя.
+    """
+    try:
+        user = CustomUser.objects.get(pk=pk)  # Используйте правильный класс модели
+    except CustomUser.DoesNotExist:
+        return Response({'status': 'Error', 'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = UserSerializer(user, data=request.data, partial=True)  # Используйте правильный сериализатор
+    if serializer.is_valid():
+        serializer.save()
+        return Response({'status': 'Success', 'data': serializer.data}, status=status.HTTP_200_OK)
+    
+    return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+@authentication_classes([])
+@csrf_exempt
+@swagger_auto_schema(method='post', request_body=UserSerializer)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_view(request):
+    username = request.data["email"] 
+    password = request.data["password"]
+    user = authenticate(request, email=username, password=password)
+    if user is not None:
+        refresh = RefreshToken.for_user(user)
+        random_key = str(uuid.uuid4())
+        session_storage.set(random_key, username)
+
+        response = JsonResponse({
+            'status': 'ok',
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        })
+        response.set_cookie("session_id", random_key)
+
+        return response
+    else:
+        return HttpResponse("{'status': 'error', 'error': 'login failed'}")
+
+@api_view(['Post'])
+def logout_view(request):
+    logout(request._request)
+    return Response({'status': 'Success'})
+
+# ЛАБА 4 КОНЕЦ
+
 
 class CashbackServiceList(APIView):
+    authentication_classes = [JWTAuthentication]  # Enable JWT Authentication
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]  # Разрешить всем пользователям на POST
+        elif self.request.method == 'GET':
+            return [IsManager()]  # Разрешить только администраторам на GET
+        return super().get_permissions()  # Для других методов использовать стандартные разрешения
+
     def get(self, request):
+        self.check_permissions(request)
         creator = get_creator()
         services = CashbackService.objects.filter(status='active')
 
@@ -59,9 +181,10 @@ class CashbackServiceList(APIView):
         })
 
         return Response(response_data)
-    
+
     @swagger_auto_schema(request_body=CashbackServiceSerializer)
     def post(self, request):
+        self.check_permissions(request)  # Явно проверяем права доступа
         serializer = CashbackServiceSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()  # Сохраняем новую услугу
@@ -104,25 +227,150 @@ class CashbackServiceDetail(APIView):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    # @authentication_classes([])
+    # @csrf_exempt
+    # @swagger_auto_schema(method='post')
+    # @permission_classes([AllowAny])
+    # @api_view(['POST'])
+    # def add_to_draft_order(request, id):
+    #     service = get_object_or_404(CashbackService, id=id)
+    #     creator = get_creator()  # Получаем создателя через функцию-синглтон
+
+    # # Пытаемся найти последний черновик, созданный данным пользователем
+    #     draft_order = CashbackOrder.objects.filter(creator=creator, status='draft').last()
+
+    # # Если черновик не найден, создаем новый
+    #     if draft_order is None:
+    #         draft_order = CashbackOrder.objects.create(creator=creator, status='draft')
+
+    # # Добавляем услугу в черновик (существующий или новый)
+    #     CashbackOrderService.objects.create(order=draft_order, service=service)
+
+    # # Возвращаем ID черновика
+    #     return Response({'order_id': draft_order.id}, status=status.HTTP_201_CREATED)
+
+
+
+
+
+
+
+    # @csrf_exempt
+    # @swagger_auto_schema(method='post')
+    # @api_view(['POST'])
+    # @authentication_classes([JWTAuthentication])
+    # @permission_classes([IsAuthenticated])
+    # def add_to_draft_order(request, id):
+    #     user = request.user
+
+    #     if not user.is_authenticated:
+    #         return Response({'error': 'Пользователь не аутентифицирован'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # # Проверяем, существует ли пользователь
+    #     if not CustomUser.objects.filter(id=user.id).exists():
+    #         return Response({'error': 'Пользователь не найден'}, status=status.HTTP_404_NOT_FOUND)
+
+    #     service = get_object_or_404(CashbackService, id=id)
+
+    # # Пытаемся найти последний черновик, созданный пользователем
+    #     draft_order = CashbackOrder.objects.filter(creator=user, status='draft').last()
+
+    # # Если черновик не найден, создаем новый
+    #     if draft_order is None:
+    #         draft_order = CashbackOrder.objects.create(creator=user, status='draft')
+
+    # # Добавляем услугу в черновик (существующий или новый)
+    #     CashbackOrderService.objects.create(order=draft_order, service=service)
+
+    #     return Response({'order_id': draft_order.id}, status=status.HTTP_201_CREATED)
+
+
+
+
+
+
+
+    @csrf_exempt
     @swagger_auto_schema(method='post')
     @api_view(['POST'])
+    @authentication_classes([JWTAuthentication])
+    @permission_classes([IsAuthenticated])
     def add_to_draft_order(request, id):
+        user = request.user
+
+        if not user.is_authenticated:
+            return Response({'error': 'Пользователь не аутентифицирован'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Проверяем существование пользователя
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT email FROM tasks_customuser WHERE id = %s", [user.id])
+            result = cursor.fetchone()
+
+        if not result:
+            return Response({'error': 'Пользователь не найден'}, status=status.HTTP_404_NOT_FOUND)
+
+        email = result[0]
+
         service = get_object_or_404(CashbackService, id=id)
-        creator = get_creator()  # Получаем создателя через функцию-синглтон
 
-    # Пытаемся найти последний черновик, созданный данным пользователем
-        draft_order = CashbackOrder.objects.filter(creator=creator, status='draft').last()
+    # Создаем черновик
+        draft_order = CashbackOrder.objects.create(creator=user, status='draft')
 
-    # Если черновик не найден, создаем новый
-        if draft_order is None:
-            draft_order = CashbackOrder.objects.create(creator=creator, status='draft')
-
-    # Добавляем услугу в черновик (существующий или новый)
+    # Добавляем услугу в черновик
         CashbackOrderService.objects.create(order=draft_order, service=service)
 
-    # Возвращаем ID черновика
         return Response({'order_id': draft_order.id}, status=status.HTTP_201_CREATED)
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     @swagger_auto_schema(method='post')
     @api_view(['POST'])
     def add_image(request, id):
@@ -250,181 +498,3 @@ class CashbackOrderServiceList(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-
-
-# ЛАБА 4
-
-class UserViewSet(viewsets.ModelViewSet):
-    """Класс, описывающий методы работы с пользователями
-    Осуществляет связь с таблицей пользователей в базе данных
-    """
-    queryset = CustomUser.objects.all()
-    serializer_class = UserSerializer
-    model_class = CustomUser
-
-    def get_permissions(self):
-        if self.action in ['create']:
-            permission_classes = [AllowAny]
-        elif self.action in ['list']:
-            permission_classes = [IsAdmin | IsManager]
-        else:
-            permission_classes = [IsAdmin]
-        return [permission() for permission in permission_classes]
-
-    def create(self, request):
-        """
-        Функция регистрации новых пользователей
-        Если пользователя c указанным в request email ещё нет, в БД будет добавлен новый пользователь.
-        """
-        if self.model_class.objects.filter(email=request.data['email']).exists():
-            return Response({'status': 'Exist'}, status=400)
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            print(serializer.data)
-            self.model_class.objects.create_user(email=serializer.data['email'],
-                                     password=serializer.data['password'],
-                                     is_superuser=serializer.data['is_superuser'],
-                                     is_staff=serializer.data['is_staff'])
-            return Response({'status': 'Success'}, status=200)
-        return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-def method_permission_classes(classes):
-    def decorator(func):
-        def decorated_func(self, *args, **kwargs):
-            self.permission_classes = classes        
-            self.check_permissions(self.request)
-            return func(self, *args, **kwargs)
-        return decorated_func
-    return decorator
-
-
-@permission_classes([AllowAny])
-@authentication_classes([])
-@csrf_exempt
-@swagger_auto_schema(method='post', request_body=UserSerializer)
-@api_view(['Post'])
-def login_view(request):
-    email = request.data["email"] # допустим передали username и password
-    password = request.data["password"]
-    user = authenticate(request, email=email, password=password)
-    if user is not None:
-        login(request, user)
-        return HttpResponse("{'status': 'ok'}")
-    else:
-        return HttpResponse("{'status': 'error', 'error': 'login failed'}")
-
-def logout_view(request):
-    logout(request._request)
-    return Response({'status': 'Success'})
-
-# ЛАБА 4 КОНЕЦ
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# ПОКА БЕЗ АВТОРИЗАЦИИ В СВАГГЕРЕ
-
-class UserRegistration(APIView):
- #   @swagger_auto_schema(request_body=AuthUser)
-    def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        email = request.data.get('email')
-        first_name = request.data.get('first_name')
-        last_name = request.data.get('last_name')
-
-        user = AuthUser(
-            username=username,
-            password=password,  
-            email=email,
-            first_name=first_name,
-            last_name=last_name
-        )
-        user.save()
-        return Response({'id': user.id, 'username': user.username}, status=status.HTTP_201_CREATED)
-
-
-class UserProfile(APIView):
-  #  @swagger_auto_schema(request_body=AuthUser)
-    def put(self, request):
-        user = get_creator()  # Получаем фиксированного создателя
-        # Обновляем поля пользователя
-        for attr, value in request.data.items():
-            setattr(user, attr, value)
-        user.save()
-        return Response({'id': user.id, 'username': user.username}, status=status.HTTP_200_OK)
-
-
-class UserLogin(APIView):
-  #  @swagger_auto_schema(request_body={'type': 'object', 'properties': {'username': {'type': 'string'}, 'password': {'type': 'string'}}})
-    def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        
-        try:
-            user = AuthUser.objects.get(username=username)
-            if user.password == password:  # Проверяем пароль напрямую
-                auth_login(request, user)  
-                return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
-            else:
-                return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-        except AuthUser.DoesNotExist:
-            return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-
-
-class UserLogout(APIView):
-   # @swagger_auto_schema(responses={200: {'description': 'Logout successful'}})
-    def post(self, request):
-        auth_logout(request)  # Завершаем сессию
-        return Response({'message': 'Logout successful'}, status=status.HTTP_200_OK)
