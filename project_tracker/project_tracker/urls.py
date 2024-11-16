@@ -5,6 +5,7 @@ from drf_yasg import openapi
 from django.urls import path, include
 from drf_yasg.views import get_schema_view
 from tasks.views import (
+    Complete,
     CashbackServiceList,
     CashbackServiceDetail,
     CashbackOrderList,
@@ -14,6 +15,7 @@ from tasks.views import (
     login_view,
     logout_view,
     partial_update,
+  #  complete_or_reject_order,
 )
 schema_view = get_schema_view(
    openapi.Info(
@@ -57,7 +59,8 @@ urlpatterns = [
     path('cashback_orders/<int:id>/', CashbackOrderDetail.as_view(), name='cashback_order_detail'),
     path('cashback_orders/<int:id>/update/', CashbackOrderDetail.as_view(), name='cashback_order_update'),
     path('cashback_orders/<int:id>/create/', CashbackOrderDetail.create_order, name='create_order'),
-    path('cashback_orders/<int:id>/complete_or_reject/', CashbackOrderDetail.complete_or_reject_order, name='complete_or_reject_order'),
+     path('cashback_orders/<int:id>/complete_or_reject/', Complete.as_view(), name='complete_or_reject_order'),  # Указываем на использование класса
+   #  path('cashback_orders/<int:id>/complete_or_reject/', complete_or_reject_order, name='complete_or_reject_order'),
     path('cashback_orders/<int:id>/delete/', CashbackOrderDetail.as_view(), name='cashback_order_delete'),
 
     # Домен услуг в заявке

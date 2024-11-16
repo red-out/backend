@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import CashbackService, CashbackOrder, CashbackOrderService
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import AuthUser
+# from .models import AuthUser
 from collections import OrderedDict
 from tasks.models import CustomUser
 
@@ -50,24 +50,24 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AuthUser
-        fields = ['id', 'username', 'password', 'email', 'first_name', 'last_name']
+# class UserSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = AuthUser
+#         fields = ['id', 'username', 'password', 'email', 'first_name', 'last_name']
 
-    def create(self, validated_data):
-        # Хешируем пароль перед сохранением
-        validated_data['password'] = make_password(validated_data['password'])
-        user = AuthUser(**validated_data)
-        user.save()
-        return user
+#     def create(self, validated_data):
+#         # Хешируем пароль перед сохранением
+#         validated_data['password'] = make_password(validated_data['password'])
+#         user = AuthUser(**validated_data)
+#         user.save()
+#         return user
 
-    def get_fields(self):
-        new_fields = OrderedDict()
-        for name, field in super().get_fields().items():
-            field.required = False
-            new_fields[name] = field
-        return new_fields
+#     def get_fields(self):
+#         new_fields = OrderedDict()
+#         for name, field in super().get_fields().items():
+#             field.required = False
+#             new_fields[name] = field
+#         return new_fields
 # только для сваггера
 class CompleteOrRejectOrderSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=['complete', 'reject'])

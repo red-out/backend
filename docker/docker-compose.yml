@@ -61,7 +61,14 @@ services:
       - minio2
       - minio3
       - minio4
-
+  redis:
+    image: 'bitnami/redis:latest'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data:/data  # Указываем том для хранения данных
 ## By default this config uses default local driver,
 ## For custom volumes replace with volume driver configuration.
 volumes:
@@ -73,3 +80,6 @@ volumes:
   data3-2:
   data4-1:
   data4-2:
+  redis_data:  # Том для хранения данных Redis
+
+  # подключение к redis - docker exec -it docker-redis-1 redis-cli -h localhost -p 6379

@@ -68,7 +68,7 @@ REST_FRAMEWORK = {
         
     ]
 }
-AUTH_USER_MODEL = 'tasks.CustomUser'
+AUTH_USER_MODEL = 'tasks.CustomUser' #отключить JWT
 
 ROOT_URLCONF = 'project_tracker.urls'
 
