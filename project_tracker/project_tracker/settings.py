@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'tasks',
     'rest_framework',
     'drf_yasg',
+    'corsheaders',
 ]
 
 
@@ -53,6 +54,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'tasks.middleware.DisableCSRF',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 REST_FRAMEWORK = {
@@ -89,6 +91,12 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'project_tracker.wsgi.application'
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',  # домен, откуда будет осуществляться вызов
+]
+
+CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+CORS_ALLOW_CREDENTIALS = True
 
 
 # Database

@@ -349,6 +349,19 @@ form button:hover {
     border-color: #fdd835;
 }
 
+button.btn-secondary {
+  padding: 12px 20px;
+  background-color: #ffeb3b;
+  color: #000;
+  border: 1px solid #ffeb3b;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  margin-left: -1px;
+  font-size: 16px;
+  height: 50px;
+}
+
+  
 
 
 
@@ -366,8 +379,52 @@ form button:hover {
 
 
 
+/* Стили для деталей кешбэка */
+.cashback-details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
 
+.cashback-det-details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px 0;
+}
 
+.cashback-det-image {
+    width: 250px;
+    height: auto;
+    object-fit: contain;
+    margin-bottom: 20px;
+    border-radius: 8px;
+}
+
+.cashback-det-info {
+    text-align: left;
+    width: 100%;
+}
+
+.cashback-det-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.cashback-det-description {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.cashback-det-price {
+    font-size: 1.5rem;
+    color: #000;
+    font-weight: bold;
+}
 
 
 

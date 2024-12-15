@@ -116,13 +116,11 @@ def partial_update(request, pk=None):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-    username = request.data["email"] 
-    password = request.data["password"]
+    username = request.data.get("email") 
+    password = request.data.get("password")
     user = authenticate(request, email=username, password=password)
     
     if user is not None:
-        refresh = RefreshToken.for_user(user)
-        
         # Генерация session_id
         random_key = str(uuid.uuid4())
         
@@ -135,16 +133,18 @@ def login_view(request):
         # Создание ответа
         response = JsonResponse({
             'status': 'ok',
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
         })
-        
+
         # Установка session_id в cookie
-        response.set_cookie("session_id", random_key, path="/")
+        response.set_cookie("session_id", random_key, path="/", samesite='Lax', secure=True)
+
+        # Установка заголовков CORS
+        response['Access-Control-Allow-Origin'] = 'https://localhost:3000'
+        response['Access-Control-Allow-Credentials'] = 'true'
 
         return response
     else:
-        return HttpResponse("{'status': 'error', 'error': 'login failed'}")
+        return JsonResponse({"status": "error", "error": "login failed"})
 
 @api_view(['Post'])
 def logout_view(request):
@@ -159,40 +159,59 @@ class CashbackServiceList(APIView):
     authentication_classes = [RedisSessionAuthentication]  # Enable JWT Authentication
     def get_permissions(self):
         if self.request.method == 'POST':
-            return [IsAuthenticated()]  # Разрешить всем пользователям на POST
+            return [IsManager()]  # Разрешить всем пользователям на POST
         elif self.request.method == 'GET':
             return [AllowAny()]  # Разрешить только администраторам на GET
         return super().get_permissions()  # Для других методов использовать стандартные разрешения
-
     def get(self, request):
         self.check_permissions(request)
-        creator = request.user
         services = CashbackService.objects.filter(status='active')
 
-        draft_order = CashbackOrder.objects.filter(creator=creator, status='draft').first()
-        draft_order_id = draft_order.id if draft_order else None
+    # Получаем строку поиска из параметров запроса
+        search_term = request.query_params.get('search', '').lower()
 
-        services_count = CashbackOrderService.objects.filter(order=draft_order).count() if draft_order else 0
+    # Фильтруем только если строка поиска не пустая
+        if search_term:
+            services = services.filter(category__icontains=search_term)
 
         response_data = []
-        for service in services:
-            service_data = {
-                "id": service.id,
-                "image_url": service.image_url,
-                "category": service.category,
-                "cashback_percentage_text": service.cashback_percentage_text,
-                "full_description": service.full_description,
-                "details": service.details,
-                "status": service.status,
-            }
-            response_data.append(service_data)
 
-        response_data.append({
-            "draft_order_id": draft_order_id,
-            "cashbacks_count": services_count
-        })
+        if request.user.is_authenticated:
+            creator = request.user
+            draft_order = CashbackOrder.objects.filter(creator=creator, status='draft').first()
+            draft_order_id = draft_order.id if draft_order else None
+            services_count = CashbackOrderService.objects.filter(order=draft_order).count() if draft_order else 0
+
+            for service in services:
+                service_data = {
+                    "id": service.id,
+                    "image_url": service.image_url,
+                    "category": service.category,
+                    "cashback_percentage_text": service.cashback_percentage_text,
+                    "full_description": service.full_description,
+                    "details": service.details,
+                }
+                response_data.append(service_data)
+
+            response_data.append({
+                "draft_order_id": draft_order_id,
+                "cashbacks_count": services_count
+            })
+        else:
+            for service in services:
+                service_data = {
+                    "id": service.id,
+                    "image_url": service.image_url,
+                    "category": service.category,
+                    "cashback_percentage_text": service.cashback_percentage_text,
+                    "full_description": service.full_description,
+                    "details": service.details,
+                    "status": service.status,
+                }
+                response_data.append(service_data)
 
         return Response(response_data)
+
 
     @swagger_auto_schema(request_body=CashbackServiceSerializer)
     def post(self, request):
@@ -251,7 +270,7 @@ class CashbackServiceDetail(APIView):
     @csrf_exempt
     @swagger_auto_schema(method='post')
     @api_view(['POST'])
-    @permission_classes([IsAuthenticated])
+    @permission_classes([AllowAny])
     def add_to_draft_order(request, id):
         user = request.user
 
@@ -284,7 +303,8 @@ class CashbackServiceDetail(APIView):
 
     @swagger_auto_schema(method='post')
     @api_view(['POST'])
-    @permission_classes([IsAdmin])
+    #@permission_classes([IsAdmin])
+    @permission_classes([AllowAny])
     def add_image(request, id):
         service = get_object_or_404(CashbackService, id=id)
         pic = request.FILES.get("pic")
