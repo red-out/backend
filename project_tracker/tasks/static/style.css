@@ -1,0 +1,450 @@
+/* Общие стили для страницы */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* Стили для шапки страницы */
+header {
+    display: flex;
+    align-items: center;
+    background-color: #fff; /* Белый цвет фона */
+    padding: 8px;
+    border: 2px solid rgba(0, 0, 0, 0.05); /* Размытая серая рамка */
+    border-radius: 5px;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    font-size: 1.25rem; 
+    font-weight: bolder;
+    color: #000;
+    margin-right: 16px;
+}
+
+.mega {
+    background-color: #ffeb3b;
+    padding: 8px;
+    border: 1px solid #ffeb3b;
+    margin-right: 4px;
+    color: #000;
+    border-radius: 0;
+    font-weight: bolder;
+    letter-spacing: 0.5px;
+}
+
+.bonus {
+    color: #000;
+    font-weight: bolder;
+}
+
+p {
+    font-size: 0.9rem;
+    color: #000;
+    margin: 0;
+}
+
+#content {
+    text-align: center;
+    margin: 20px;
+}
+
+/* Стили для карточек */
+.cards-container {
+    display: flex;
+    flex-wrap: wrap; /* Позволяет карточкам переноситься на следующую строку при необходимости */
+    justify-content: space-around; /* Размещает карточки с равными промежутками */
+    padding: 20px;
+    justify-content: flex-start; 
+}
+
+
+.card {
+    width: calc(33.33% - 20px); 
+    min-height: 250px;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ffeb3b;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    margin: 10px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    position: relative; /* Убедитесь, что позиционирование работает */
+}
+
+/* Стили для контейнера изображения карточки */
+.card-image-container {
+    margin-bottom: 10px; /* Отступ снизу изображения */
+    display: flex;
+    justify-content: center; /* Центрируем изображение горизонтально */
+}
+
+
+.card-image {
+    width: 215px;
+    height: 90px;
+    object-fit: contain;
+    margin-top: 35px; /* Отступ сверху изображения */
+}
+
+
+/* Стили для названия карточки */
+.card h3 {
+    margin: 10px 0;
+    font-size: 1.2rem;
+    color: #333;
+}
+
+/* Стили для информации в карточке */
+.card p {
+    font-size: 1rem;
+    color: #666;
+}
+
+
+/* Полная кликабельность карточки */
+.card a {
+    position: relative; /* Измените на relative */
+    width: 100%;
+    height: 100%;
+    z-index: 0; /* Задать z-index для ссылки */
+    text-decoration: none;
+}
+
+/* Стили для кнопки внутри карточки */
+.card .add-to-cashback-button {
+    position: relative; 
+    z-index: 1; /* Увеличиваем z-index кнопки, чтобы она была выше ссылки */
+    margin-top: auto; /* Позволяет кнопке оставаться внизу карточки */
+}
+
+
+/* Стили для формы поиска */
+form {
+    margin-bottom: 20px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Строка поиска */
+form input {
+    padding: 12px;
+    width: 600px;
+    border: 1px solid #ffeb3b;
+    border-radius: 4px 0 0 4px;
+    outline: none;
+    border-right: none;
+}
+
+/* Кнопка поиска */
+form button {
+    padding: 12px 20px;
+    background-color: #ffeb3b;
+    color: #000;
+    border: 1px solid #ffeb3b;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    margin-left: -1px;
+    font-size: 16px;
+}
+
+form button:hover {
+    background-color: #fdd835;
+    border-color: #fdd835;
+}
+
+/* Стили для кнопки корзины */
+.cart-button {
+    padding: 12px 20px; /* Соответствует кнопке поиска */
+    background-color: #ffeb3b; /* Цвет кнопки */
+    color: #000; /* Черный текст */
+    border: 1px solid #ffeb3b; /* Соответствует кнопке поиска */
+    border-radius: 4px; /* Скругленные углы */
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    margin-left: 10px; /* Отступ от строки поиска */
+    font-size: 16px; /* Соответствует кнопке поиска */
+}
+
+.cart-button:hover {
+    background-color: #fdd835;
+    border-color: #fdd835;
+}
+
+
+
+
+/* Стили для карточки с информацией об услуге */
+.order-details {
+    text-align: center;
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #ffeb3b;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 800px; /* Увеличение ширины карточки */
+    margin: 0 auto;   /* Центрирование карточки */
+}
+
+.order-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Равномерное распределение элементов */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fff;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 100%; /* Карточка занимает всю ширину контейнера */
+    max-width: 100%; /* Убирает ограничение по ширине */
+}
+
+.order-image {
+    width: 200px; /* Увеличение ширины изображения */
+    height: 130px; /* Увеличение высоты изображения */
+    object-fit: contain;
+    border-radius: 8px;
+    margin-right: 20px;
+}
+
+.order-info {
+    text-align: left;
+    flex-grow: 1; /* Позволяет информации занимать больше пространства */
+}
+
+.order-title {
+    font-size: 2rem; /* Увеличение шрифта заголовка */
+    color: #333;
+    margin: 0 0 10px 0;
+}
+
+.order-description {
+    font-size: 1.2rem; /* Увеличение шрифта описания */
+    color: #666;
+    margin: 10px 0;
+}
+
+.order-price,
+.order-quantity {
+    font-size: 1.5rem; /* Увеличение шрифта цены и количества */
+    color: #000;
+    margin: 5px 0;
+}
+
+/* Стили для кнопок */
+.cart-actions {
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
+}
+
+
+.footer {
+    text-align: center;
+    margin: 20px 0;
+    color: #666;
+}
+
+.cart-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 800px; /* Ширина карточек */
+    padding: 20px;
+    margin: 20px auto;
+    border: 2px solid #ffeb3b; /* Желтая окантовка */
+    border-radius: 10px;
+    background-color: #fff;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.cart-item-image {
+    width: 120px; /* Ширина изображения */
+    height: 70px; /* Высота изображения */
+    object-fit: contain;
+    margin-right: 20px;
+}
+
+.cart-item-info {
+    flex-grow: 1;
+    text-align: center; /* Название и текст по центру */
+}
+
+.cart-item-title {
+    font-size: 24px; /* Увеличен размер шрифта заголовка */
+    font-weight: bold;
+    margin-bottom: 15px; /* Увеличен отступ снизу */
+}
+
+.cart-item-details {
+    font-size: 18px; /* Увеличен размер шрифта для описания */
+    color: #333; /* Цвет текста */
+    margin-bottom: 20px; /* Отступ снизу от деталей */
+}
+
+.cart-item-summary {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.cart-item-summary p {
+    font-size: 22px; /* Размер шрифта для суммы потраченного и кешбэка */
+    margin: 5px 0; /* Отступ сверху и снизу */
+}
+
+.cart-item-price {
+    font-weight: bold;
+}
+
+.cart-item-cashback {
+    color: green;
+    font-weight: bold;
+}
+
+
+/* Стили для кнопок */
+.checkout-button,
+.back-button {
+    padding: 12px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 16px;
+    margin: 0 10px;
+    display: inline-block;
+    transition: background-color 0.3s ease;
+}
+
+.checkout-button {
+    background-color: #ffeb3b;
+    color: #000;
+    border: 1px solid #ffeb3b;
+}
+
+.checkout-button:hover {
+    background-color: #fdd835;
+    border-color: #fdd835;
+}
+
+button.btn-secondary {
+  padding: 12px 20px;
+  background-color: #ffeb3b;
+  color: #000;
+  border: 1px solid #ffeb3b;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  margin-left: -1px;
+  font-size: 16px;
+  height: 50px;
+}
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Стили для деталей кешбэка */
+.cashback-details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.cashback-det-details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.cashback-det-image {
+    width: 250px;
+    height: auto;
+    object-fit: contain;
+    margin-bottom: 20px;
+    border-radius: 8px;
+}
+
+.cashback-det-info {
+    text-align: left;
+    width: 100%;
+}
+
+.cashback-det-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.cashback-det-description {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.cashback-det-price {
+    font-size: 1.5rem;
+    color: #000;
+    font-weight: bold;
+}
+
+
+
+
+
+/* Стили для кнопки внутри карточки */
+.add-to-cashback-button {
+    padding: 12px 20px; /* Подобно кнопке корзины */
+    background-color: #ffeb3b; /* Цвет кнопки */
+    color: #000; /* Черный текст */
+    border: 1px solid #ffeb3b; /* Соответствует кнопке корзины */
+    border-radius: 4px; /* Скругленные углы */
+    cursor: pointer;
+    text-align: center;
+    margin-top: 10px; /* Отступ сверху, чтобы кнопка не прилипала к содержимому */
+    font-size: 16px; /* Размер шрифта */
+    transition: background-color 0.3s ease; /* Эффект перехода */
+}
+
+.add-to-cashback-button:hover {
+    background-color: #fdd835; /* Цвет при наведении */
+    border-color: #fdd835; /* Цвет границы при наведении */
+}

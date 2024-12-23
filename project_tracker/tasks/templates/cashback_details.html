@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Информация о кешбэке {{ data.id }}{% endblock %}
+
+{% block content %}
+    <div class="order-details">
+     
+            <img src="{{ data.image_url }}" alt="{{ data.title }}" class="order-image">
+            <div class="order-info">
+                <h2 class="order-title">{{ data.title }}</h2>
+                <p class="order-description">{{ data.full_description }}</p>
+                <p class="order-price">Описание: {{ data.details }}</p>
+
+        </div>
+    </div>
+    <div class="cart-actions">
+   
+    </div>
+{% endblock %}
+
+
