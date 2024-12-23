@@ -29,7 +29,7 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
-
+CORS_ALLOW_HEADERS = ['Content-Type', 'Authorization']
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -42,10 +42,15 @@ INSTALLED_APPS = [
     'drf_yasg',
     'corsheaders',
 ]
+SESSION_COOKIE_SECURE = False  # Используйте True для HTTPS
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'None'  # Для кросс-доменных запросов
+CSRF_TRUSTED_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000']
 
 
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -54,7 +59,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'tasks.middleware.DisableCSRF',
-    'corsheaders.middleware.CorsMiddleware',
 ]
 
 REST_FRAMEWORK = {
@@ -93,6 +97,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'project_tracker.wsgi.application'
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',  # домен, откуда будет осуществляться вызов
+    "http://127.0.0.1:3000",  # Добавьте ваш домен здесь
 ]
 
 CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
@@ -131,6 +136,7 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
 
 
 # Internationalization

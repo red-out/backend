@@ -11,6 +11,7 @@ from tasks.views import (
     CashbackOrderList,
     CashbackOrderDetail,
     CashbackOrderServiceList,
+    CashbackOrderServiceAddToDraft,
     UserViewSet, # 4(laba)
     login_view,
     logout_view,
@@ -51,8 +52,8 @@ urlpatterns = [
     path('cashback_services/add/', CashbackServiceList.as_view(), name='cashback_service_add'),
     path('cashback_services/<int:id>/update/', CashbackServiceDetail.as_view(), name='cashback_service_update'),
     path('cashback_services/<int:id>/delete/', CashbackServiceDetail.as_view(), name='cashback_service_delete'),
-    path('cashback_services/<int:id>/add_to_draft/', CashbackServiceDetail.add_to_draft_order, name='add_to_draft_order'),
-    path('cashback_services/<int:id>/add_image/', CashbackServiceDetail.add_image, name='add_image'),
+    path('cashback_services/<int:id>/add_to_draft/', CashbackOrderServiceAddToDraft.as_view(), name='add_to_draft_order'),
+    path('cashback_services/<int:id>/add_image/', CashbackOrderServiceAddToDraft.as_view(), name='add_image'),
 
     # Домен заявки
     path('cashback_orders/', CashbackOrderList.as_view(), name='cashback_order_list'),
